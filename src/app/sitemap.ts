@@ -1,27 +1,8 @@
 import type { MetadataRoute } from "next";
-import { defaultLocale, locales, type Locale } from "@/lib/i18n/config";
 import { getAllPublishedSlugs } from "@/lib/posts/public-queries";
-import { absoluteUrl, localePath } from "./[lang]/_lib/seo";
+import { absoluteUrl } from "./(site)/_lib/seo";
 
-function languages(path: string): Record<string, string> {
-  const map: Record<string, string> = {};
-  for (const l of locales) map[l] = absoluteUrl(localePath(l, path));
-  map["x-default"] = absoluteUrl(localePath(defaultLocale, path));
-  return map;
-}
-
-function entries(
-  path: string,
-  options: Omit<MetadataRoute.Sitemap[number], "url" | "alternates">,
-): MetadataRoute.Sitemap {
-  return locales.map((l: Locale) => ({
-    url: absoluteUrl(localePath(l, path)),
-    alternates: { languages: languages(path) },
-    ...options,
-  }));
-}
-
-/** Every public page in every locale, each with hreflang alternates. */
+/** Every public page. The site is Russian-only (browser translation covers other languages), so no hreflang. */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const posts = await getAllPublishedSlugs();
   const latest = posts.reduce<Date | undefined>(
@@ -30,10 +11,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   );
 
   return [
-    ...entries("", { lastModified: latest, changeFrequency: "daily", priority: 1 }),
-    ...entries("/tags", { lastModified: latest, changeFrequency: "weekly", priority: 0.4 }),
-    ...posts.flatMap((p) =>
-      entries(`/posts/${p.slug}`, { lastModified: p.updatedAt, changeFrequency: "monthly", priority: 0.8 }),
-    ),
+    { url: absoluteUrl("/"), lastModified: latest, changeFrequency: "daily", priority: 1 },
+    { url: absoluteUrl("/tags"), lastModified: latest, changeFrequency: "weekly", priority: 0.4 },
+    ...posts.map((p) => ({
+      url: absoluteUrl(`/posts/${p.slug}`),
+      lastModified: p.updatedAt,
+      changeFrequency: "monthly" as const,
+      priority: 0.8,
+    })),
   ];
 }

@@ -1,12 +1,11 @@
 "use client";
-/** Dashboard list with status filters, locale badges and quick actions. */
+/** Dashboard list with status filters and quick actions. */
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Pencil, ExternalLink, Trash2, Plus, FileText, ImageIcon } from "lucide-react";
 import { clsx } from "clsx";
 import type { PostListItem } from "@/lib/admin/types";
-import { locales, localeShort, localeNames } from "@/lib/i18n/config";
 import { deletePost } from "@/app/admin/actions";
 import { useToast } from "./toast";
 import { ConfirmDialog } from "./dialog";
@@ -129,21 +128,6 @@ export function PostList({ posts: initialPosts }: { posts: PostListItem[] }) {
                         <LocalTime iso={p.publishedAt} options={{ hour: undefined, minute: undefined }} />
                       ) : null}
                     </span>
-                    <span className="flex gap-1" aria-label="Языковые версии">
-                      {locales.map((l) => {
-                        const ok = p.locales.includes(l);
-                        return (
-                          <span
-                            key={l}
-                            title={`${localeNames[l]}: ${ok ? "готово" : "нет или устарел"}`}
-                            className={clsx("rounded px-1 text-[0.6875rem] font-semibold tracking-wide", ok ? "text-fg-muted" : "text-fg-subtle line-through decoration-[var(--tc-orange)]")}
-                          >
-                            {localeShort[l]}
-                            {ok ? " ✓" : ""}
-                          </span>
-                        );
-                      })}
-                    </span>
                   </div>
                 </div>
                 <div className="relative z-10 flex shrink-0 items-center gap-0.5 opacity-100 transition-opacity sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
@@ -152,7 +136,7 @@ export function PostList({ posts: initialPosts }: { posts: PostListItem[] }) {
                   </Link>
                   {p.status === "published" ? (
                     <a
-                      href={`/ru/posts/${p.slug}`}
+                      href={`/posts/${p.slug}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="admin-icon-btn"
@@ -174,7 +158,7 @@ export function PostList({ posts: initialPosts }: { posts: PostListItem[] }) {
       <ConfirmDialog
         open={!!toDelete}
         title="Удалить запись навсегда?"
-        description={toDelete ? `«${toDelete.title || "Без заголовка"}» — все языковые версии. Это нельзя отменить.` : undefined}
+        description={toDelete ? `«${toDelete.title || "Без заголовка"}». Это нельзя отменить.` : undefined}
         confirmLabel="Удалить"
         danger
         busy={busy}

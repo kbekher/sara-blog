@@ -1,13 +1,13 @@
 import type { MetadataRoute } from "next";
-import { defaultLocale } from "@/lib/i18n/config";
+import { siteLocale } from "@/lib/i18n/config";
 import { site } from "@/lib/site";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: site.name[defaultLocale],
-    short_name: site.name[defaultLocale],
-    description: site.description[defaultLocale],
-    lang: defaultLocale,
+    name: site.name,
+    short_name: site.name,
+    description: site.description,
+    lang: siteLocale,
     start_url: "/",
     scope: "/",
     display: "standalone",

@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { CalendarClock, Trash2 } from "lucide-react";
 import { listTags } from "@/app/admin/actions";
-import type { Locale } from "@/lib/i18n/config";
 import { Dialog } from "./dialog";
 import { TagsInput } from "./tags-input";
 import { LocalTime, useIsClient } from "./time";
@@ -23,7 +22,6 @@ type Props = {
   open: boolean;
   onClose: () => void;
   postId: string | null;
-  sourceLocale: Locale;
   slug: string;
   onSlugChange: (slug: string) => void;
   tags: string[];
@@ -43,7 +41,6 @@ export function SettingsPanel(props: Props) {
     open,
     onClose,
     postId,
-    sourceLocale,
     slug,
     onSlugChange,
     tags,
@@ -71,13 +68,13 @@ export function SettingsPanel(props: Props) {
     let cancelled = false;
     listTags()
       .then((res) => {
-        if (!cancelled && res.ok) setSuggestions(res.data.map((t) => t.names[sourceLocale]).filter(Boolean));
+        if (!cancelled && res.ok) setSuggestions(res.data.map((t) => t.name).filter(Boolean));
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [open, sourceLocale]);
+  }, [open]);
 
   const origin = client ? window.location.origin : "";
   const commitSlug = () => {
@@ -114,7 +111,7 @@ export function SettingsPanel(props: Props) {
           <p className="admin-hint break-all">
             {slugDraft ? (
               <>
-                {origin}/{sourceLocale}/posts/<span className="text-fg-muted">{slugify(slugDraft)}</span>
+                {origin}/posts/<span className="text-fg-muted">{slugify(slugDraft)}</span>
               </>
             ) : (
               "Латиницей, через дефис. Если оставить пустым — создастся автоматически из заголовка."

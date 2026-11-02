@@ -1,16 +1,13 @@
 /**
  * Proxy (formerly "middleware") — runs before routes render (Node.js runtime by default).
  *
- *  1. /admin/**   → auth gate: no valid session ⇒ redirect to /admin/login?next=…;
- *                   valid session on /admin/login ⇒ redirect to /admin. Rolling cookie refresh.
- *                   (Every Server Action / Route Handler re-verifies the session itself.)
- *  2. public URLs without a locale prefix (/, /posts/x) ⇒ 307 to /<locale>/…,
- *     locale = NEXT_LOCALE cookie → Accept-Language best match → "ru".
+ * Only the admin auth gate lives here (the public site is Russian-only with plain URLs; old `/ru|/uk|/en/…`
+ * links are permanently redirected in next.config.ts):
+ *   /admin/** → no valid session ⇒ redirect to /admin/login?next=…;
+ *               valid session on /admin/login ⇒ redirect to /admin. Rolling cookie refresh.
+ *               (Every Server Action / Route Handler re-verifies the session itself.)
  */
 import { NextResponse, type NextRequest } from "next/server";
-import { match } from "@formatjs/intl-localematcher";
-import Negotiator from "negotiator";
-import { defaultLocale, isLocale, locales, type Locale } from "@/lib/i18n/config";
 import {
   ADMIN_HOME,
   LOGIN_PATH,
@@ -21,25 +18,8 @@ import {
 } from "@/lib/auth/config";
 import { signSessionToken, verifySessionToken } from "@/lib/auth/jwt";
 
-const LOCALE_COOKIE = "NEXT_LOCALE";
-
 export async function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-
-  if (pathname === ADMIN_HOME || pathname.startsWith(`${ADMIN_HOME}/`)) {
-    return handleAdmin(request);
-  }
-
-  // Root-level metadata routes generated without a file extension (app/icon.tsx → /icon, /apple-icon).
-  if (/^\/(?:apple-)?icon\d*(?:\/|$)/.test(pathname)) return NextResponse.next();
-
-  const first = pathname.split("/")[1];
-  if (isLocale(first)) return NextResponse.next();
-
-  const locale = detectLocale(request);
-  const url = request.nextUrl.clone();
-  url.pathname = `/${locale}${pathname === "/" ? "" : pathname}`;
-  return NextResponse.redirect(url, 307);
+  return handleAdmin(request);
 }
 
 async function handleAdmin(request: NextRequest) {
@@ -82,27 +62,7 @@ async function handleAdmin(request: NextRequest) {
   return response;
 }
 
-function detectLocale(request: NextRequest): Locale {
-  const cookieLocale = request.cookies.get(LOCALE_COOKIE)?.value;
-  if (isLocale(cookieLocale)) return cookieLocale;
-
-  const acceptLanguage = request.headers.get("accept-language");
-  if (!acceptLanguage) return defaultLocale;
-  try {
-    const languages = new Negotiator({ headers: { "accept-language": acceptLanguage } })
-      .languages()
-      .filter((l) => l !== "*");
-    if (languages.length === 0) return defaultLocale;
-    const matched = match(languages, locales as unknown as string[], defaultLocale);
-    return isLocale(matched) ? matched : defaultLocale;
-  } catch {
-    // Malformed Accept-Language tags make Intl throw — fall back silently.
-    return defaultLocale;
-  }
-}
-
 export const config = {
-  // Everything except Next internals, API routes, Vercel internals and files with an extension
-  // (favicon.ico, robots.txt, sitemap.xml, manifest.webmanifest, images, …).
-  matcher: ["/((?!api/|api$|_next/|_vercel/|.*\\..*).*)"],
+  // `:path*` also matches zero segments, so this covers /admin itself.
+  matcher: ["/admin/:path*"],
 };

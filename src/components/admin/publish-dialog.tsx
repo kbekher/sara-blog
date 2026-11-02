@@ -1,5 +1,5 @@
 "use client";
-/** Publish now / schedule, with the "translate automatically" option. */
+/** Publish now / schedule. */
 import { useState } from "react";
 import { Loader2, Send, CalendarClock } from "lucide-react";
 import { clsx } from "clsx";
@@ -13,7 +13,7 @@ type Props = {
   status: "draft" | "published" | "scheduled";
   publishedAt: string | null;
   busy: boolean;
-  onPublish: (input: { publishAt?: string; translate: boolean }) => void;
+  onPublish: (input: { publishAt?: string }) => void;
 };
 
 /** yyyy-MM-ddTHH:mm in local time, for <input type="datetime-local">. */
@@ -28,7 +28,7 @@ export function PublishDialog(props: Props) {
       open={props.open}
       onClose={props.onClose}
       title={props.status === "draft" ? "Публикация" : "Дата публикации"}
-      description={props.status === "draft" ? "Запись появится на сайте на трёх языках." : undefined}
+      description={props.status === "draft" ? "Запись появится на сайте." : undefined}
       size="md"
     >
       {props.open ? <PublishForm {...props} /> : null}
@@ -44,7 +44,6 @@ function PublishForm({ status, publishedAt, busy, onPublish, onClose }: Props) {
     d.setHours(9, 0, 0, 0);
     return toLocalInput(d);
   });
-  const [translate, setTranslate] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const submit = () => {
@@ -58,9 +57,9 @@ function PublishForm({ status, publishedAt, busy, onPublish, onClose }: Props) {
         setError("Это время уже прошло — выберите время в будущем или «Сейчас».");
         return;
       }
-      onPublish({ publishAt: date.toISOString(), translate });
+      onPublish({ publishAt: date.toISOString() });
     } else {
-      onPublish({ translate });
+      onPublish({});
     }
   };
 
@@ -123,21 +122,6 @@ function PublishForm({ status, publishedAt, busy, onPublish, onClose }: Props) {
         </div>
       ) : null}
 
-      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border p-3.5">
-        <input
-          type="checkbox"
-          checked={translate}
-          onChange={(e) => setTranslate(e.target.checked)}
-          className="mt-1 size-4 accent-[var(--accent)]"
-        />
-        <span>
-          <span className="block text-sm font-medium text-fg">Автоматически перевести на украинский и английский</span>
-          <span className="mt-0.5 block text-[0.8125rem] text-fg-subtle">
-            Переводятся только отсутствующие и устаревшие версии. Потом их можно поправить вручную.
-          </span>
-        </span>
-      </label>
-
       {error ? (
         <p role="alert" className="text-sm text-[var(--tc-red)]">
           {error}
@@ -150,7 +134,7 @@ function PublishForm({ status, publishedAt, busy, onPublish, onClose }: Props) {
         </button>
         <button type="submit" className="admin-btn admin-btn-primary" disabled={busy}>
           {busy ? <Loader2 className="size-4 animate-spin" aria-hidden /> : when === "now" ? <Send className="size-4" aria-hidden /> : <CalendarClock className="size-4" aria-hidden />}
-          {busy ? (translate ? "Перевожу и публикую…" : "Публикую…") : when === "now" ? "Опубликовать" : "Запланировать"}
+          {busy ? "Публикую…" : when === "now" ? "Опубликовать" : "Запланировать"}
         </button>
       </div>
     </form>

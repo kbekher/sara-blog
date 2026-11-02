@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
-import { defaultLocale } from "@/lib/i18n/config";
 import { site } from "@/lib/site";
 import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = {
-  title: `Вход — ${site.name[defaultLocale]}`,
+  title: `Вход — ${site.name}`,
   robots: { index: false, follow: false },
 };
 
@@ -24,7 +23,7 @@ export default function LoginPage() {
         <div className="rounded-3xl border border-border bg-bg-elevated/80 p-8 shadow-[var(--shadow-lg)] backdrop-blur-xl sm:p-10">
           <header className="mb-8 text-center">
             <h1 className="font-serif text-[2rem] font-semibold leading-tight tracking-tight text-fg-strong text-balance">
-              {site.name[defaultLocale]}
+              {site.name}
             </h1>
             <p className="mt-2 text-sm text-fg-muted">Вход в панель управления</p>
           </header>

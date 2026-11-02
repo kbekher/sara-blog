@@ -4,14 +4,13 @@ import { sourceSerif } from "../fonts";
 import { ThemeScript } from "@/components/theme-script";
 import { ToastProvider } from "@/components/admin/toast";
 import { AdminTopBar } from "@/components/admin/admin-top-bar";
-import { defaultLocale } from "@/lib/i18n/config";
 import { site } from "@/lib/site";
 // globals.css also pulls in src/styles/prose.css (`.prose-sara`), which the editor body uses for true WYSIWYG.
 import "../globals.css";
 import "@/components/admin/admin.css";
 
 export const metadata: Metadata = {
-  title: { default: `Админка · ${site.name[defaultLocale]}`, template: "%s · Админка" },
+  title: { default: `Админка · ${site.name}`, template: "%s · Админка" },
   robots: { index: false, follow: false, nocache: true, googleBot: { index: false, follow: false } },
 };
 
