@@ -1,5 +1,4 @@
 import { siteLocaleTag } from "@/lib/i18n/config";
-import { getDictionary } from "@/lib/i18n/get-dictionary";
 import { getFeedPosts } from "@/lib/posts/public-queries";
 import { site } from "@/lib/site";
 import { absoluteUrl, RSS_PATH } from "../_lib/seo";
@@ -26,7 +25,6 @@ function absolutizeHtml(html: string): string {
 
 /** RSS 2.0 feed with full post content. Cached via the post queries (tag "posts"). */
 export async function GET() {
-  const dict = getDictionary();
   const posts = await getFeedPosts();
 
   const home = absoluteUrl("/");
@@ -60,7 +58,7 @@ export async function GET() {
   const body = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:media="http://search.yahoo.com/mrss/">
 <channel>
-<title>${xml(`${site.name} — ${dict.meta.homeTitle}`)}</title>
+<title>${xml(site.name)}</title>
 <link>${xml(home)}</link>
 <description>${xml(site.description)}</description>
 <language>${siteLocaleTag}</language>

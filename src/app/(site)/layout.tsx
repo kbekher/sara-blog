@@ -22,7 +22,7 @@ const dict = getDictionary();
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteOrigin),
-  title: { default: `${site.name} — ${dict.meta.homeTitle}`, template: `%s — ${site.name}` },
+  title: { default: site.name, template: `%s — ${site.name}` },
   description: site.description,
   applicationName: site.name,
   authors: [{ name: site.author }],

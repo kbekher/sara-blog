@@ -13,7 +13,6 @@ export type PluralForms = { one: string; few?: string; many?: string; other: str
 
 const ru = {
   meta: {
-    homeTitle: "Мысли о жизни",
     tagsTitle: "Темы",
     tagsDescription: "Все темы, о которых я пишу.",
     tagTitle: "Тема «{tag}»",
