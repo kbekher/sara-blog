@@ -4,6 +4,7 @@
  * without ever returning secrets (the API key is never echoed).
  */
 import { authorizeAdminRequest } from "@/lib/auth/guard";
+import { readSenderEmail } from "@/lib/services/sender-email";
 import { brevoApiUrl } from "@/lib/services/brevo";
 
 type Check = { ok: boolean; item: string; detail: string };
@@ -31,7 +32,8 @@ export async function GET(request: Request): Promise<Response> {
   const apiKey = process.env.BREVO_API_KEY?.trim() ?? "";
   const rawList = process.env.BREVO_LIST_ID?.trim() ?? "";
   const rawTemplate = process.env.BREVO_DOI_TEMPLATE_ID?.trim() ?? "";
-  const senderEmail = process.env.BREVO_SENDER_EMAIL?.trim() ?? "";
+  const rawSender = process.env.BREVO_SENDER_EMAIL?.trim() ?? "";
+  const senderEmail = readSenderEmail(rawSender);
   const listId = Number(rawList);
   const templateId = Number(rawTemplate);
 
@@ -58,7 +60,9 @@ export async function GET(request: Request): Promise<Response> {
     !senderEmail
       ? "не задан — без него письма о новых записях не отправляются. Укажите адрес отправителя, подтверждённый в Brevo"
       : /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(senderEmail)
-        ? `= ${senderEmail}${process.env.BREVO_SENDER_NAME?.trim() ? ` (имя: ${process.env.BREVO_SENDER_NAME.trim()})` : ""}`
+        ? `= ${senderEmail}${process.env.BREVO_SENDER_NAME?.trim() ? ` (имя: ${process.env.BREVO_SENDER_NAME.trim()})` : ""}${
+            rawSender !== senderEmail ? ` — в Vercel записано «${rawSender}», лишние символы игнорируются; лучше исправить на чистый адрес` : ""
+          }`
         : `не похож на email: «${senderEmail}»`,
   );
 
@@ -94,7 +98,9 @@ export async function GET(request: Request): Promise<Response> {
         add(
           false,
           "Отправитель",
-          `${senderEmail} не найден среди отправителей Brevo. Добавьте его: Brevo → Senders, Domains & Dedicated IPs → Senders → Add sender, затем подтвердите адрес по ссылке из письма (или подтвердите домен).`,
+          `${senderEmail} не найден среди отправителей Brevo. Подтверждённые отправители в Brevo: ${
+            senders.filter((s) => s.active).map((s) => s.email).join(", ") || "нет"
+          }. Укажите один из них в BREVO_SENDER_EMAIL (без < > и запятых) или добавьте адрес: Brevo → Senders, Domains & Dedicated IPs → Senders → Add sender.`,
         );
       } else if (sender.active !== true) {
         add(false, "Отправитель", `${senderEmail} есть в Brevo, но не подтверждён — откройте письмо от Brevo и нажмите ссылку подтверждения (Senders → Resend).`);

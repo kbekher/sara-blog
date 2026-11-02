@@ -1,4 +1,5 @@
 import "server-only";
+import { readSenderEmail } from "./sender-email";
 /**
  * "New post" email campaigns via the Brevo API v3 (https://developers.brevo.com/reference/createemailcampaign).
  *
@@ -22,7 +23,7 @@ type CampaignConfig = { apiKey: string; listId: number; sender: { name: string; 
 function readConfig(): CampaignConfig | null {
   const apiKey = process.env.BREVO_API_KEY?.trim() ?? "";
   const listId = Number(process.env.BREVO_LIST_ID?.trim());
-  const email = process.env.BREVO_SENDER_EMAIL?.trim() ?? "";
+  const email = readSenderEmail();
   if (!apiKey || !Number.isInteger(listId) || listId <= 0 || !email.includes("@")) return null;
   const name = process.env.BREVO_SENDER_NAME?.trim() || site.author;
   return { apiKey, listId, sender: { name, email } };
@@ -62,7 +63,7 @@ function toUserMessage(status: number, message: string): string {
   }
   if (status === 429) return "Слишком много запросов к Brevo — попробуйте через минуту.";
   if (status === 400 && /sender/i.test(message)) {
-    return "Отправитель BREVO_SENDER_EMAIL не подтверждён в Brevo: Senders, Domains & Dedicated IPs → Senders → добавьте и подтвердите адрес.";
+    return `Brevo не принял отправителя BREVO_SENDER_EMAIL${message ? ` («${message}»)` : ""}. Адрес должен в точности совпадать с подтверждённым в Brevo → Senders, Domains & Dedicated IPs → Senders (см. /api/newsletter/check).`;
   }
   if (status === 400) return `Brevo отклонил письмо: ${message || "некорректные данные"}.`;
   if (status === 404) return "Рассылка не найдена в Brevo.";
