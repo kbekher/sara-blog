@@ -121,7 +121,13 @@ function PickerBody({
     try {
       const params = new URLSearchParams({ query: q, page: String(p), orientation: "landscape" });
       const res = await fetch(`/api/unsplash/search?${params}`);
-      if (!res.ok) throw new Error(String(res.status));
+      if (!res.ok) {
+        // Show the server's explanation (missing/invalid key, rate limit, expired session…).
+        const body = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(
+          body?.error ?? (res.status === 401 ? "Сессия истекла — войдите в админку заново." : `Ошибка сервера (${res.status}).`),
+        );
+      }
       const data = (await res.json()) as { results: UnsplashPhoto[]; totalPages: number };
       if (id !== requestId.current) return;
       setPhotos((prev) => {
@@ -131,8 +137,12 @@ function PickerBody({
       });
       setTotalPages(data.totalPages || 1);
       setPage(p);
-    } catch {
-      if (id === requestId.current) setError("Не получилось загрузить фотографии. Проверьте интернет и попробуйте ещё раз.");
+    } catch (err) {
+      if (id === requestId.current) {
+        // fetch() rejects with TypeError only on real network failures.
+        const message = err instanceof Error && err.message && err.name !== "TypeError" ? err.message : null;
+        setError(message ?? "Не получилось загрузить фотографии. Проверьте интернет и попробуйте ещё раз.");
+      }
     } finally {
       if (id === requestId.current) setLoading(false);
     }

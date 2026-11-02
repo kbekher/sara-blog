@@ -81,22 +81,39 @@ export type Orientation = "landscape" | "portrait" | "squarish";
 
 export type UnsplashSearchResult = { results: UnsplashPhoto[]; totalPages: number };
 
+/** Errors can't cross a "use cache" boundary intact (class + message are lost), so the cached fn returns them as data. */
+type CachedSearch = { ok: true; data: UnsplashSearchResult } | { ok: false; status: number; message: string };
+
 /**
  * Search (or, for an empty query, popular photos). Cached for a few minutes per (query, page, orientation)
- * to save the 50 req/h demo quota. Errors throw and are therefore never cached.
+ * to save the 50 req/h demo quota. Failures are cached for only a minute.
  */
 export async function searchUnsplash(query: string, page: number, orientation?: Orientation): Promise<UnsplashSearchResult> {
   // Checked outside the cache scope so the "not configured" error is always reported precisely.
   if (!isUnsplashConfigured()) {
     throw new UnsplashError(503, "Unsplash не настроен: задайте UNSPLASH_ACCESS_KEY (см. README).");
   }
-  return searchUnsplashCached(query, page, orientation ?? null);
+  const result = await searchUnsplashCached(query, page, orientation ?? null);
+  if (!result.ok) throw new UnsplashError(result.status, result.message);
+  return result.data;
 }
 
-async function searchUnsplashCached(query: string, page: number, orientation: Orientation | null): Promise<UnsplashSearchResult> {
+async function searchUnsplashCached(query: string, page: number, orientation: Orientation | null): Promise<CachedSearch> {
   "use cache";
-  cacheLife({ stale: 300, revalidate: 600, expire: 3600 });
+  try {
+    const data = await fetchSearch(query, page, orientation);
+    cacheLife({ stale: 300, revalidate: 600, expire: 3600 });
+    return { ok: true, data };
+  } catch (error) {
+    // Short-lived: don't hammer Unsplash while rate-limited / misconfigured, but recover quickly.
+    cacheLife({ stale: 30, revalidate: 60, expire: 60 });
+    if (error instanceof UnsplashError) return { ok: false, status: error.status, message: error.userMessage };
+    console.error("[unsplash] search failed", error);
+    return { ok: false, status: 502, message: "Unsplash сейчас недоступен. Попробуйте позже." };
+  }
+}
 
+async function fetchSearch(query: string, page: number, orientation: Orientation | null): Promise<UnsplashSearchResult> {
   const perPage = 24;
   if (!query) {
     const res = await unsplashFetch(`/photos?order_by=popular&per_page=${perPage}&page=${page}`);

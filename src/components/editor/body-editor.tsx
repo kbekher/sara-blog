@@ -76,6 +76,9 @@ export default function BodyEditor({
   title,
   saveStatus,
 }: BodyEditorProps) {
+  // Opt out of the React Compiler (it used to skip this component anyway): the extension list is deliberately
+  // created once and closes over refs that Tiptap reads from event handlers, which the compiler cannot model.
+  "use no memo";
   const toast = useToast();
   const [ltEnabled, setLtEnabled] = useState(() => readLanguageToolEnabled());
   const [ltStatus, setLtStatus] = useState<LTStatus>({ state: "off" });
