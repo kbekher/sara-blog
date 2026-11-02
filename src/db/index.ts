@@ -1,9 +1,13 @@
 import "server-only";
-import { neon } from "@neondatabase/serverless";
+import { neon, neonConfig } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import * as schema from "./schema";
 
 const url = process.env.DATABASE_URL;
+
+// Local development/testing only: point the HTTP driver at a local Neon-compatible endpoint
+// (e.g. local-neon-http-proxy). Never set this in production.
+if (process.env.NEON_FETCH_ENDPOINT) neonConfig.fetchEndpoint = process.env.NEON_FETCH_ENDPOINT;
 
 /**
  * Drizzle client over Neon's HTTP driver (ideal for Vercel serverless).

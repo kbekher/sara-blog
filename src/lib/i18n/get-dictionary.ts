@@ -1,4 +1,5 @@
 import { localeTags, type Locale } from "./config";
+import { site } from "@/lib/site";
 import ru, { type Dictionary, type PluralForms } from "./dictionaries/ru";
 import uk from "./dictionaries/uk";
 import en from "./dictionaries/en";
@@ -42,6 +43,7 @@ export function formatDate(locale: Locale, date: Date | string): string {
     day: "numeric",
     month: "long",
     year: "numeric",
-    timeZone: "UTC",
+    // Fixed site time zone keeps server rendering deterministic and dates correct for readers.
+    timeZone: site.timeZone,
   }).format(typeof date === "string" ? new Date(date) : date);
 }

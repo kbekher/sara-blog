@@ -2,6 +2,8 @@
 export const site = {
   name: "Sara's Blog",
   author: "Sara",
+  /** IANA time zone used to display post dates (and the admin scheduler hint). */
+  timeZone: process.env.NEXT_PUBLIC_SITE_TIMEZONE || "Europe/Kyiv",
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
   description: {
     ru: "Мысли о разных сторонах жизни и очень необычный жизненный опыт.",
