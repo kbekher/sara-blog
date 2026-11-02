@@ -106,7 +106,9 @@ export function NewsletterForm({
         </div>
       ) : (
         <form onSubmit={onSubmit} noValidate className="mt-5">
-          <div className="flex flex-col gap-2.5 sm:flex-row">
+          {/* Stacked on mobile (each control full-width, fixed height), inline from `sm` up. The input must not
+              use `flex-1` in the column layout: its 0 basis would collapse the height to a sliver. */}
+          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-stretch">
             <label htmlFor={emailId} className="sr-only">
               {labels.emailLabel}
             </label>
@@ -122,7 +124,9 @@ export function NewsletterForm({
               aria-describedby={statusId}
               disabled={loading}
               className={clsx(
-                "h-11 min-w-0 flex-1 rounded-full border bg-bg px-4.5 text-[0.9375rem] text-fg-strong placeholder:text-fg-subtle",
+                // 16px text on mobile prevents iOS Safari from zooming into the focused field.
+                "h-12 w-full min-w-0 shrink-0 rounded-full border bg-bg px-4.5 text-base text-fg-strong placeholder:text-fg-subtle",
+                "sm:h-11 sm:w-auto sm:flex-1 sm:text-[0.9375rem]",
                 "transition-[border-color,box-shadow] duration-300 ease-apple outline-none",
                 "focus-visible:border-accent focus-visible:shadow-[0_0_0_3px_var(--selection)] focus-visible:outline-none",
                 state.status === "error" ? "border-(--tc-red)" : "border-border-strong",
@@ -139,7 +143,8 @@ export function NewsletterForm({
               type="submit"
               disabled={loading}
               className={clsx(
-                "group inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-accent px-5.5 text-[0.9375rem] font-medium text-accent-fg",
+                "group inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-full bg-accent px-5.5 text-base font-medium text-accent-fg",
+                "sm:h-11 sm:text-[0.9375rem]",
                 "transition-[background-color,transform] duration-300 ease-apple hover:bg-accent-hover active:scale-[0.98]",
                 "disabled:cursor-progress disabled:opacity-80",
               )}

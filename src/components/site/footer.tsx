@@ -70,7 +70,12 @@ export function SiteFooter({ locale, dict }: { locale: Locale; dict: Dictionary 
           </p>
         </div>
 
-        <NewsletterForm locale={locale} labels={dict.newsletter} />
+        {/* The site's single newsletter signup (post pages don't repeat it), so it gets a faint accent glow. */}
+        <NewsletterForm
+          locale={locale}
+          labels={dict.newsletter}
+          className="self-start bg-[radial-gradient(110%_100%_at_100%_0%,color-mix(in_oklab,var(--accent)_10%,transparent),transparent_70%)]"
+        />
       </div>
     </footer>
   );

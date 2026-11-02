@@ -188,9 +188,31 @@ function countImages(doc: JSONContent): number {
   return n;
 }
 
+/** A paragraph with no visible content: no children, or only whitespace text / hard breaks. */
+function isEmptyParagraph(node: JSONContent): boolean {
+  if (node.type !== "paragraph") return false;
+  return (node.content ?? []).every(
+    (child) => child.type === "hardBreak" || (child.type === "text" && !(child.text ?? "").trim()),
+  );
+}
+
+/**
+ * Drop leading and trailing empty paragraphs (blank lines the author left at the edges). Empty paragraphs
+ * between blocks are left alone. An all-empty document keeps a single paragraph so it stays schema-valid.
+ */
+function trimEdgeParagraphs(doc: JSONContent): JSONContent {
+  const content = doc.content ?? [];
+  let start = 0;
+  let end = content.length;
+  while (start < end && isEmptyParagraph(content[start])) start++;
+  while (end > start && isEmptyParagraph(content[end - 1])) end--;
+  if (start === 0 && end === content.length) return doc;
+  return { ...doc, content: start < end ? content.slice(start, end) : [{ type: "paragraph" }] };
+}
+
 /** Everything the save action needs for one translation: normalized JSON, sanitized HTML, plain text, reading time. */
 export function renderContent(doc: JSONContent, locale: Locale = "ru"): RenderedContent {
-  const json = toNode(doc).toJSON() as JSONContent;
+  const json = trimEdgeParagraphs(toNode(doc).toJSON() as JSONContent);
   const html = sanitizeHtml(generateHTML(json, extensions()));
   const plainText = extractPlainText(json);
   return { json, html, plainText, readingMinutes: readingMinutesFor(plainText, locale, countImages(json)) };

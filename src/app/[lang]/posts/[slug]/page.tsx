@@ -16,7 +16,6 @@ import { CoverImage } from "@/components/site/cover-image";
 import { PostMeta } from "@/components/site/post-meta";
 import { TagList } from "@/components/site/tag-chip";
 import { ShareButtons } from "@/components/site/share-buttons";
-import { NewsletterForm } from "@/components/site/newsletter-form";
 import { ReadingProgress } from "@/components/site/reading-progress";
 import { ArticleSkeleton } from "@/components/site/skeletons";
 import { absoluteUrl, jsonLd, localePath, pageAlternates } from "../../_lib/seo";
@@ -183,8 +182,6 @@ async function PostContent({ params }: { params: PageProps<"/[lang]/posts/[slug]
               />
             </div>
           </div>
-
-          <NewsletterForm locale={lang} labels={dict.newsletter} />
 
           <AdjacentPosts lang={lang} dict={dict} newer={adjacent.newer} older={adjacent.older} />
         </footer>

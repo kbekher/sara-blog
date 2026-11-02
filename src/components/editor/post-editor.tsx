@@ -35,6 +35,7 @@ import { clsx } from "clsx";
 import type { CoverImage } from "@/db/schema";
 import type { PostEditorData, SavePostInput, TranslationInput } from "@/lib/admin/types";
 import { locales, localeNames, localeShort, type Locale } from "@/lib/i18n/config";
+import { typographText } from "@/lib/content/typography";
 import {
   deletePost,
   getPost,
@@ -402,6 +403,17 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
       drafts: { ...cur.drafts, [locale]: { ...(cur.drafts[locale] ?? emptyDraft()), [field]: value } },
     }));
     markDirty(locale);
+  };
+
+  /**
+   * Smart typography for title/subtitle on blur (the body gets it live via input rules): quotes, dashes,
+   * ellipsis, no-break spaces — locale-aware. Capitalization is left to the author. Only writes on change.
+   */
+  const typographField = (field: "title" | "excerpt") => {
+    const current = dataRef.current.drafts[activeRef.current]?.[field];
+    if (!current) return;
+    const next = typographText(current, activeRef.current, { capitalize: false });
+    if (next !== current) setDraftField(field, next);
   };
 
   const onBodyChange = useCallback(() => markDirty(activeRef.current), [markDirty]);
@@ -844,7 +856,10 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
               maxLength={200}
               onChange={(v) => setDraftField("title", v)}
               onEnter={() => excerptRef.current?.focus()}
-              onBlur={onBodyBlur}
+              onBlur={() => {
+                typographField("title");
+                onBodyBlur();
+              }}
             />
             <TitleField
               ref={excerptRef}
@@ -856,7 +871,10 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
               maxLength={300}
               onChange={(v) => setDraftField("excerpt", v)}
               onEnter={() => editorRef.current?.commands.focus("start")}
-              onBlur={onBodyBlur}
+              onBlur={() => {
+                typographField("excerpt");
+                onBodyBlur();
+              }}
             />
 
             <BodyEditor
