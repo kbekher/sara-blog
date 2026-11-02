@@ -3,6 +3,8 @@
 A calm, dark, multilingual personal blog — thoughts on life and a very uncommon life experience.
 Sara writes in Russian; posts are machine-translated to Ukrainian and English with DeepL and can be hand-edited.
 
+The blog and author names are localized — «Блог Сары» (ru), «Блог Сари» (uk), “Sara's Blog” (en) — and live, with the per-locale descriptions, in `src/lib/site.ts`.
+
 **Stack:** Next.js 16 (App Router, Cache Components) · React 19 · TypeScript · Tailwind CSS v4 · Drizzle ORM + Neon Postgres · Vercel Blob · Tiptap v3 · DeepL · Unsplash · LanguageTool · Brevo. Hosted on Vercel.
 
 ## Features

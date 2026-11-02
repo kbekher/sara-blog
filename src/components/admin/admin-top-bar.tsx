@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ExternalLink, LogOut } from "lucide-react";
 import { logout } from "@/app/admin/actions";
+import { defaultLocale } from "@/lib/i18n/config";
+import { site } from "@/lib/site";
 import { ThemeToggle } from "./theme-toggle";
 
 export function AdminTopBar() {

@@ -11,16 +11,21 @@ import { getSchema, type JSONContent } from "@tiptap/core";
 import { Node as PMNode, type Schema } from "@tiptap/pm/model";
 import sanitize from "sanitize-html";
 import type { Locale } from "@/lib/i18n/config";
-import { getExtensions, isAllowedHref } from "./extensions";
+import { getExtensions, isAllowedHref, isUnsplashProfileUrl, PHOTO_CREDIT_CLASS } from "./extensions";
 import { readingMinutesFor } from "./stats";
 import { TEXT_COLORS, type RenderedContent } from "./types";
 
-let cachedExtensions: ReturnType<typeof getExtensions> | null = null;
+const cachedExtensions = new Map<Locale, ReturnType<typeof getExtensions>>();
 let cachedSchema: Schema | null = null;
 
-function extensions() {
-  cachedExtensions ??= getExtensions();
-  return cachedExtensions;
+/** Extension set for rendering in `locale` (only photo-credit wording differs; the schema is the same). */
+function extensions(locale: Locale = "ru") {
+  let list = cachedExtensions.get(locale);
+  if (!list) {
+    list = getExtensions(locale);
+    cachedExtensions.set(locale, list);
+  }
+  return list;
 }
 function schema(): Schema {
   cachedSchema ??= getSchema(extensions());
@@ -47,7 +52,9 @@ const SANITIZE_OPTIONS: sanitize.IOptions = {
   allowedAttributes: {
     a: ["href", "target", "rel", "title"],
     img: ["src", "alt", "title", "width", "height", "loading", "decoding"],
-    span: [{ name: "data-color", multiple: false, values: [...TEXT_COLORS] }],
+    span: [{ name: "data-color", multiple: false, values: [...TEXT_COLORS] }, { name: "translate", multiple: false, values: ["no"] }, "class"],
+    // Structured stock-photo credit (see FigureImage); values are validated in transformTags.figure.
+    figure: [{ name: "data-source", multiple: false, values: ["unsplash"] }, "data-credit-name", "data-credit-url"],
     mark: [{ name: "data-highlight", multiple: false, values: [...TEXT_COLORS] }],
     p: ["style"],
     h2: ["style"],
@@ -55,7 +62,7 @@ const SANITIZE_OPTIONS: sanitize.IOptions = {
     ol: ["start", "type"],
     code: ["class"],
   },
-  allowedClasses: { code: [/^language-[\w-]+$/] },
+  allowedClasses: { code: [/^language-[\w-]+$/], span: [PHOTO_CREDIT_CLASS] },
   allowedStyles: {
     p: { "text-align": ALIGN },
     h2: { "text-align": ALIGN },
@@ -86,6 +93,13 @@ const SANITIZE_OPTIONS: sanitize.IOptions = {
       tagName,
       attribs: { "data-highlight": (TEXT_COLORS as readonly string[]).includes(attribs["data-highlight"] ?? "") ? attribs["data-highlight"] : "yellow" },
     }),
+    // Credit attributes only as a complete, valid set.
+    figure: (tagName, attribs) => {
+      const name = attribs["data-credit-name"]?.trim();
+      const url = attribs["data-credit-url"]?.trim();
+      if (attribs["data-source"] !== "unsplash" || !name || !isUnsplashProfileUrl(url)) return { tagName, attribs: {} };
+      return { tagName, attribs: { "data-source": "unsplash", "data-credit-name": name, "data-credit-url": url } };
+    },
     img: (tagName, attribs) => ({
       tagName,
       attribs: { ...attribs, loading: "lazy", decoding: "async" },
@@ -96,7 +110,7 @@ const SANITIZE_OPTIONS: sanitize.IOptions = {
     if (frame.tag === "img") return !frame.attribs.src;
     if (frame.tag === "a" && !frame.attribs.href) return "excludeTag";
     // Color/highlight wrappers that lost their (invalid) value carry no meaning.
-    if (frame.tag === "span" && !frame.attribs["data-color"]) return "excludeTag";
+    if (frame.tag === "span" && !frame.attribs["data-color"] && frame.attribs.class !== PHOTO_CREDIT_CLASS) return "excludeTag";
     return false;
   },
 };
@@ -119,10 +133,10 @@ function toNode(doc: JSONContent): PMNode {
   }
 }
 
-/** Tiptap JSON → sanitized HTML. */
-export function jsonToHtml(doc: JSONContent): string {
+/** Tiptap JSON → sanitized HTML (`locale` selects the photo-credit wording). */
+export function jsonToHtml(doc: JSONContent, locale: Locale = "ru"): string {
   const normalized = toNode(doc).toJSON() as JSONContent;
-  return sanitizeHtml(generateHTML(normalized, extensions()));
+  return sanitizeHtml(generateHTML(normalized, extensions(locale)));
 }
 
 /**
@@ -213,7 +227,7 @@ function trimEdgeParagraphs(doc: JSONContent): JSONContent {
 /** Everything the save action needs for one translation: normalized JSON, sanitized HTML, plain text, reading time. */
 export function renderContent(doc: JSONContent, locale: Locale = "ru"): RenderedContent {
   const json = trimEdgeParagraphs(toNode(doc).toJSON() as JSONContent);
-  const html = sanitizeHtml(generateHTML(json, extensions()));
+  const html = sanitizeHtml(generateHTML(json, extensions(locale)));
   const plainText = extractPlainText(json);
   return { json, html, plainText, readingMinutes: readingMinutesFor(plainText, locale, countImages(json)) };
 }

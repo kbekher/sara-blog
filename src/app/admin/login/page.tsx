@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { defaultLocale } from "@/lib/i18n/config";
+import { site } from "@/lib/site";
 import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = {
