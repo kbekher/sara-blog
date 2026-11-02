@@ -18,24 +18,24 @@
 :root,
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #142030;
-  --bg-elevated: #1e3442;
-  --bg-sunken: #0f1925;
-  --surface: rgb(233 216 200 / 0.05);
-  --surface-hover: rgb(233 216 200 / 0.08);
-  --border: rgb(233 216 200 / 0.1);
-  --border-strong: rgb(233 216 200 / 0.18);
-  --fg: #e9d8c8; /* Siesta Tan; body — 11.8:1 */
-  --fg-strong: #f6ede4; /* headings */
-  --fg-muted: #85a3b2; /* Grauzone; meta — 6.2:1 */
-  --fg-subtle: #7895a4; /* captions, hints — 5.2:1 */
-  --accent: #ff5c8d; /* Stellar Strawberry; links/focus */
-  --accent-hover: #ff85a8;
-  --accent-fg: #142030;
-  --selection: rgb(255 92 141 / 0.3);
-  --code-bg: #18283a;
+  --bg: #0b0b0c;
+  --bg-elevated: #151517;
+  --bg-sunken: #070708;
+  --surface: rgb(255 255 255 / 0.04);
+  --surface-hover: rgb(255 255 255 / 0.07);
+  --border: rgb(255 255 255 / 0.09);
+  --border-strong: rgb(255 255 255 / 0.16);
+  --fg: #e8e6e3; /* body — ~15.5:1 */
+  --fg-strong: #f5f4f2; /* headings */
+  --fg-muted: #a3a09b; /* meta — ~7.6:1 */
+  --fg-subtle: #75726d; /* captions, hints — ~4.6:1 */
+  --accent: #d4a373; /* warm amber; links/focus */
+  --accent-hover: #e6bb8f;
+  --accent-fg: #1a1208;
+  --selection: rgb(212 163 115 / 0.3);
+  --code-bg: #141416;
   --shadow-lg: 0 24px 60px -20px rgb(0 0 0 / 0.7);
-  --glass: rgb(20 32 48 / 0.72);
+  --glass: rgb(11 11 12 / 0.72);
 
   /* Editor text-color palette (theme-aware; referenced via data-color="name") */
   --tc-gray: #a3a09b;
@@ -59,24 +59,24 @@
 
 :root[data-theme="light"] {
   color-scheme: light;
-  --bg: #f4eadf;
-  --bg-elevated: #fbf6f0;
-  --bg-sunken: #e9d8c8;
-  --surface: rgb(20 32 48 / 0.04);
-  --surface-hover: rgb(20 32 48 / 0.07);
-  --border: rgb(20 32 48 / 0.1);
-  --border-strong: rgb(20 32 48 / 0.18);
-  --fg: #142030;
-  --fg-strong: #0b1420;
-  --fg-muted: #3e5463;
-  --fg-subtle: #52656f;
-  --accent: #732553;
-  --accent-hover: #5a1c41;
+  --bg: #fbfaf8;
+  --bg-elevated: #ffffff;
+  --bg-sunken: #f3f1ed;
+  --surface: rgb(0 0 0 / 0.03);
+  --surface-hover: rgb(0 0 0 / 0.06);
+  --border: rgb(0 0 0 / 0.08);
+  --border-strong: rgb(0 0 0 / 0.15);
+  --fg: #2a2826;
+  --fg-strong: #141312;
+  --fg-muted: #5f5b56;
+  --fg-subtle: #7a756f;
+  --accent: #9a5b25;
+  --accent-hover: #7d4719;
   --accent-fg: #ffffff;
-  --selection: rgb(115 37 83 / 0.16);
-  --code-bg: #ece0d3;
+  --selection: rgb(154 91 37 / 0.18);
+  --code-bg: #f1eee9;
   --shadow-lg: 0 24px 60px -24px rgb(0 0 0 / 0.18);
-  --glass: rgb(244 234 223 / 0.78);
+  --glass: rgb(251 250 248 / 0.75);
 
   --tc-gray: #6b6660;
   --tc-red: #c0392b;

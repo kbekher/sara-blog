@@ -1,6 +1,6 @@
 # Email templates (Brevo)
 
-Styled like the blog (dark, Source Serif 4 / Georgia headings, navy `#142030` + Stellar Strawberry accent `#FF5C8D`).
+Styled like the blog (dark, Source Serif 4 / Georgia headings, warm amber accent `#D4A373`).
 
 | File | Use in Brevo | Required tag |
 |---|---|---|
