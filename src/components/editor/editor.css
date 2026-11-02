@@ -272,6 +272,25 @@
   opacity: 1;
 }
 
+/* Read-only stock-photo credit under the caption (mirrors .photo-credit on the public site) */
+.editor-photo-credit {
+  margin-top: 0.25rem;
+  text-align: center;
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  color: var(--fg-subtle);
+  user-select: none;
+}
+.editor-figure .editor-photo-credit a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--border-strong);
+  text-underline-offset: 2px;
+}
+.editor-figure .editor-photo-credit a:hover {
+  color: var(--fg-muted);
+}
+
 /* Upload placeholder widget */
 .editor-upload {
   position: relative;

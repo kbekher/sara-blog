@@ -52,7 +52,7 @@ const SANITIZE_OPTIONS: sanitize.IOptions = {
   allowedAttributes: {
     a: ["href", "target", "rel", "title"],
     img: ["src", "alt", "title", "width", "height", "loading", "decoding"],
-    span: [{ name: "data-color", multiple: false, values: [...TEXT_COLORS] }, { name: "translate", multiple: false, values: ["no"] }, "class"],
+    span: [{ name: "data-color", multiple: false, values: [...TEXT_COLORS] }, { name: "translate", multiple: false, values: ["no"] }],
     // Structured stock-photo credit (see FigureImage); values are validated in transformTags.figure.
     figure: [{ name: "data-source", multiple: false, values: ["unsplash"] }, "data-credit-name", "data-credit-url"],
     mark: [{ name: "data-highlight", multiple: false, values: [...TEXT_COLORS] }],
@@ -94,7 +94,7 @@ const SANITIZE_OPTIONS: sanitize.IOptions = {
       attribs: { "data-highlight": (TEXT_COLORS as readonly string[]).includes(attribs["data-highlight"] ?? "") ? attribs["data-highlight"] : "yellow" },
     }),
     // Credit attributes only as a complete, valid set.
-    figure: (tagName, attribs) => {
+    figure: (tagName, attribs): sanitize.Tag => {
       const name = attribs["data-credit-name"]?.trim();
       const url = attribs["data-credit-url"]?.trim();
       if (attribs["data-source"] !== "unsplash" || !name || !isUnsplashProfileUrl(url)) return { tagName, attribs: {} };

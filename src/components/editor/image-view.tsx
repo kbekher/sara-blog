@@ -2,12 +2,19 @@
 /**
  * React node view for body images: the picture, an always-visible caption field and an "ALT" editor
  * (opened automatically right after an upload — describing images is an accessibility must).
+ * Stock photos also show their (read-only, auto-generated) photographer credit under the caption.
  */
 import { useEffect, useId, useRef, useState } from "react";
 import { NodeViewWrapper, ReactNodeViewRenderer, type ReactNodeViewProps } from "@tiptap/react";
 import { Trash2, TextCursorInput, AlertTriangle } from "lucide-react";
 import { clsx } from "clsx";
-import { FigureImage } from "@/lib/content/extensions";
+import {
+  canonicalUnsplashProfileUrl,
+  FigureImage,
+  PHOTO_CREDIT_LABELS,
+  UNSPLASH_HOME,
+  withUnsplashUtm,
+} from "@/lib/content/extensions";
 import { takePendingAlt } from "./extensions/image-upload";
 
 function ImageView({ node, updateAttributes, deleteNode, selected, editor, getPos }: ReactNodeViewProps) {
@@ -16,6 +23,10 @@ function ImageView({ node, updateAttributes, deleteNode, selected, editor, getPo
   const caption = (node.attrs.caption as string | null) ?? "";
   const width = node.attrs.width as number | null;
   const height = node.attrs.height as number | null;
+  const creditName = ((node.attrs.creditName as string | null) ?? "").trim();
+  const creditUrl = canonicalUnsplashProfileUrl(node.attrs.creditUrl);
+  const hasCredit = node.attrs.source === "unsplash" && !!creditName && !!creditUrl;
+  const creditLabel = PHOTO_CREDIT_LABELS.ru;
   const [altOpen, setAltOpen] = useState(false);
   const [altDraft, setAltDraft] = useState(alt);
   const altId = useId();
@@ -130,6 +141,19 @@ function ImageView({ node, updateAttributes, deleteNode, selected, editor, getPo
           }
         }}
       />
+      {hasCredit ? (
+        <p className="editor-photo-credit" contentEditable={false} title="Подпись автора добавляется автоматически">
+          {creditLabel.before}
+          <a href={withUnsplashUtm(creditUrl!)} target="_blank" rel="noopener noreferrer nofollow">
+            {creditName}
+          </a>
+          {creditLabel.middle}
+          <a href={withUnsplashUtm(UNSPLASH_HOME)} target="_blank" rel="noopener noreferrer nofollow">
+            Unsplash
+          </a>
+          {creditLabel.after}
+        </p>
+      ) : null}
     </NodeViewWrapper>
   );
 }

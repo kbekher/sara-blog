@@ -139,6 +139,13 @@ export function isUnsplashProfileUrl(value: unknown): value is string {
   return typeof value === "string" && /^https:\/\/unsplash\.com\/@[^\s"<>]+$/.test(value.trim());
 }
 
+/** Profile URL without query/hash (UTM is added at render time), or null when it is not an Unsplash profile. */
+export function canonicalUnsplashProfileUrl(value: unknown): string | null {
+  if (!isUnsplashProfileUrl(value)) return null;
+  const url = value.trim().replace(/[?#].*$/, "");
+  return isUnsplashProfileUrl(url) ? url : null;
+}
+
 /** Localized wording around the two links: "{before}<a>Name</a>{middle}<a>Unsplash</a>{after}" (same as the cover). */
 export type PhotoCreditLabel = { before: string; middle: string; after: string };
 export const PHOTO_CREDIT_LABELS: Record<Locale, PhotoCreditLabel> = {
@@ -264,7 +271,7 @@ export const FigureImage = Image.extend<FigureImageOptions>({
         default: null,
         parseHTML: (element) => {
           const value = figureOf(element)?.getAttribute("data-credit-url") ?? creditLinkOf(element)?.getAttribute("href");
-          return isUnsplashProfileUrl(value) ? value.trim() : null;
+          return canonicalUnsplashProfileUrl(value);
         },
         renderHTML: () => ({}),
       },
@@ -289,8 +296,8 @@ export const FigureImage = Image.extend<FigureImageOptions>({
   renderHTML({ node, HTMLAttributes }) {
     const caption = typeof node.attrs.caption === "string" ? node.attrs.caption.trim() : "";
     const name = typeof node.attrs.creditName === "string" ? node.attrs.creditName.trim() : "";
-    const url = node.attrs.creditUrl;
-    const hasCredit = node.attrs.source === "unsplash" && !!name && isUnsplashProfileUrl(url);
+    const url = canonicalUnsplashProfileUrl(node.attrs.creditUrl);
+    const hasCredit = node.attrs.source === "unsplash" && !!name && !!url;
 
     const img = ["img", mergeAttributes(this.options.HTMLAttributes, HTMLAttributes)] as const;
     const figureAttrs = hasCredit ? { "data-source": "unsplash", "data-credit-name": name, "data-credit-url": url } : {};
@@ -301,7 +308,7 @@ export const FigureImage = Image.extend<FigureImageOptions>({
       const { before, middle, after } = this.options.creditLabel;
       const credit: SpecChild[] = [];
       if (before) credit.push(before);
-      credit.push(["a", { href: withUnsplashUtm(url) }, name]);
+      credit.push(["a", { href: withUnsplashUtm(url!) }, name]);
       if (middle) credit.push(middle);
       credit.push(["a", { href: withUnsplashUtm(UNSPLASH_HOME) }, "Unsplash"]);
       if (after) credit.push(after);

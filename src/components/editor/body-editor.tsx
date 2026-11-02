@@ -7,7 +7,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { EditorContent, useEditor, type Editor, type JSONContent } from "@tiptap/react";
 import { Placeholder } from "@tiptap/extensions";
-import { getExtensions } from "@/lib/content/extensions";
+import { canonicalUnsplashProfileUrl, getExtensions } from "@/lib/content/extensions";
 import { countWords, readingMinutesFor } from "@/lib/content/stats";
 import type { Locale } from "@/lib/i18n/config";
 import { useToast } from "@/components/admin/toast";
@@ -272,6 +272,10 @@ export default function BodyEditor({
         width={1600}
         title="Фото в текст"
         onSelect={(cover) => {
+          // The picker has already pinged /api/unsplash/download; src is hotlinked from images.unsplash.com.
+          // The credit is stored as structured attrs and rendered with links — the caption stays the author's.
+          const creditUrl = canonicalUnsplashProfileUrl(cover.credit?.profileUrl);
+          const credited = cover.source === "unsplash" && !!cover.credit?.name && !!creditUrl;
           editor
             .chain()
             .focus()
@@ -282,7 +286,10 @@ export default function BodyEditor({
                 alt: cover.alt,
                 width: cover.width ?? null,
                 height: cover.height ?? null,
-                caption: cover.credit ? `Фото: ${cover.credit.name} / Unsplash` : null,
+                caption: null,
+                source: credited ? "unsplash" : null,
+                creditName: credited ? cover.credit!.name : null,
+                creditUrl: credited ? creditUrl : null,
               },
             })
             .run();

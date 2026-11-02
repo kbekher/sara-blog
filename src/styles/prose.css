@@ -323,6 +323,26 @@
   color: var(--fg-subtle);
   text-wrap: balance;
 }
+/* Auto-generated stock-photo credit ("Фото: <a>Name</a> на <a>Unsplash</a>"), on its own line after the caption */
+.prose-sara figcaption .photo-credit {
+  display: block;
+  font-size: 0.9em;
+}
+.prose-sara figcaption .photo-credit:not(:first-child) {
+  margin-top: 0.15em;
+}
+.prose-sara figcaption .photo-credit a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--border-strong);
+  text-underline-offset: 2px;
+  transition: color 0.2s, text-decoration-color 0.2s;
+}
+.prose-sara figcaption .photo-credit a:hover {
+  color: var(--fg-muted);
+  text-decoration-color: currentColor;
+}
 @media (max-width: 639px) {
   /* Edge-to-edge media on phones (container has 1.25rem side padding) */
   .prose-sara > img,
