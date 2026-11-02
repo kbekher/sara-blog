@@ -84,7 +84,7 @@ export function OgCard({
         height: "100%",
         display: "flex",
         position: "relative",
-        background: "#0b0b0c",
+        background: "#0a0c0f",
         color: "#f5f4f2",
         fontFamily: '"Source Serif 4", serif',
       }}
@@ -120,7 +120,7 @@ export function OgCard({
           padding: "64px 72px",
         }}
       >
-        <div style={{ display: "flex", fontSize: 26, color: "#d4a373", letterSpacing: 1, marginBottom: 22 }}>
+        <div style={{ display: "flex", fontSize: 26, color: "#9db8cf", letterSpacing: 1, marginBottom: 22 }}>
           {eyebrow}
         </div>
         <div

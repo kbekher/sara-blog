@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ru" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="supported-color-schemes" content="dark">
+  <title>Подтвердите подписку — Блог Сары</title>
+  <!-- Source Serif 4 loads in Apple Mail / iOS; other clients fall back to Georgia. -->
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&amp;display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; padding: 0; background: #0a0c0f; }
+    a { color: #9db8cf; }
+    @media (max-width: 620px) {
+      .card { padding: 32px 22px !important; }
+      .title { font-size: 28px !important; }
+    }
+  </style>
+</head>
+<body style="margin:0;padding:0;background:#0a0c0f;">
+  <!-- Preheader (inbox preview text) -->
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#0a0c0f;">
+    Один клик — и новые записи будут приходить вам на почту.
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#0a0c0f" style="background:#0a0c0f;">
+    <tr>
+      <td align="center" style="padding:40px 16px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;">
+
+          <!-- Brand -->
+          <tr>
+            <td style="padding:0 4px 24px 4px;font-family:'Source Serif 4',Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;color:#f3f5f7;">
+              Блог Сары
+            </td>
+          </tr>
+
+          <!-- Card -->
+          <tr>
+            <td class="card" bgcolor="#13161a" style="background:#13161a;border:1px solid #23272d;border-radius:20px;padding:44px 40px;">
+              <p style="margin:0 0 14px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#9db8cf;">
+                Письма от Сары
+              </p>
+              <h1 class="title" style="margin:0 0 18px 0;font-family:'Source Serif 4',Georgia,'Times New Roman',serif;font-size:32px;line-height:1.15;font-weight:600;color:#f3f5f7;">
+                Подтвердите подписку
+              </h1>
+              <p style="margin:0 0 30px 0;font-family:'Source Serif 4',Georgia,'Times New Roman',serif;font-style:italic;font-size:19px;line-height:1.6;color:#9ca3ab;">
+                Спасибо, что хотите читать мои истории. Остался один шаг — нажмите на кнопку, чтобы получать новые записи на почту.
+              </p>
+
+              <!-- Button (bulletproof) -->
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td bgcolor="#9db8cf" style="background:#9db8cf;border-radius:999px;">
+                    <a href="{{ doubleoptin }}" target="_blank"
+                       style="display:inline-block;padding:15px 30px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:16px;font-weight:600;color:#0a0f15;text-decoration:none;border-radius:999px;">
+                      Подтвердить подписку →
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:30px 0 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:14px;line-height:1.6;color:#79818a;">
+                Если кнопка не работает, откройте эту ссылку:<br>
+                <a href="{{ doubleoptin }}" style="color:#9db8cf;word-break:break-all;">{{ doubleoptin }}</a>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:24px 4px 0 4px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:13px;line-height:1.6;color:#79818a;">
+              Вы получили это письмо, потому что ваш адрес указали в форме подписки на
+              <a href="https://sara-blog-mxit.vercel.app/" style="color:#9ca3ab;">Блоге Сары</a>.
+              Если это были не вы — просто проигнорируйте письмо, подписка не будет оформлена.
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

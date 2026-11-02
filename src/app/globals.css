@@ -18,24 +18,24 @@
 :root,
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #0b0b0c;
-  --bg-elevated: #151517;
-  --bg-sunken: #070708;
+  --bg: #0a0c0f;
+  --bg-elevated: #13161a;
+  --bg-sunken: #06080a;
   --surface: rgb(255 255 255 / 0.04);
   --surface-hover: rgb(255 255 255 / 0.07);
   --border: rgb(255 255 255 / 0.09);
   --border-strong: rgb(255 255 255 / 0.16);
-  --fg: #e8e6e3; /* body — ~15.5:1 */
-  --fg-strong: #f5f4f2; /* headings */
-  --fg-muted: #a3a09b; /* meta — ~7.6:1 */
-  --fg-subtle: #75726d; /* captions, hints — ~4.6:1 */
-  --accent: #d4a373; /* warm amber; links/focus */
-  --accent-hover: #e6bb8f;
-  --accent-fg: #1a1208;
-  --selection: rgb(212 163 115 / 0.3);
-  --code-bg: #141416;
+  --fg: #e4e7ea; /* body — ~15.5:1 */
+  --fg-strong: #f3f5f7; /* headings */
+  --fg-muted: #9ca3ab; /* meta — ~7.6:1 */
+  --fg-subtle: #79818a; /* captions, hints — ~4.6:1 */
+  --accent: #9db8cf; /* glacier blue (from her mountain/sea photos); links/focus */
+  --accent-hover: #bdd0e0;
+  --accent-fg: #0a0f15;
+  --selection: rgb(157 184 207 / 0.3);
+  --code-bg: #11141a;
   --shadow-lg: 0 24px 60px -20px rgb(0 0 0 / 0.7);
-  --glass: rgb(11 11 12 / 0.72);
+  --glass: rgb(10 12 15 / 0.72);
 
   /* Editor text-color palette (theme-aware; referenced via data-color="name") */
   --tc-gray: #a3a09b;
@@ -59,24 +59,24 @@
 
 :root[data-theme="light"] {
   color-scheme: light;
-  --bg: #fbfaf8;
+  --bg: #f6f8fa;
   --bg-elevated: #ffffff;
-  --bg-sunken: #f3f1ed;
+  --bg-sunken: #edf0f3;
   --surface: rgb(0 0 0 / 0.03);
   --surface-hover: rgb(0 0 0 / 0.06);
   --border: rgb(0 0 0 / 0.08);
   --border-strong: rgb(0 0 0 / 0.15);
-  --fg: #2a2826;
-  --fg-strong: #141312;
-  --fg-muted: #5f5b56;
-  --fg-subtle: #7a756f;
-  --accent: #9a5b25;
-  --accent-hover: #7d4719;
+  --fg: #24282d;
+  --fg-strong: #111417;
+  --fg-muted: #59616b;
+  --fg-subtle: #666e78;
+  --accent: #3d5f7c;
+  --accent-hover: #2c4a64;
   --accent-fg: #ffffff;
-  --selection: rgb(154 91 37 / 0.18);
-  --code-bg: #f1eee9;
+  --selection: rgb(61 95 124 / 0.16);
+  --code-bg: #edf0f3;
   --shadow-lg: 0 24px 60px -24px rgb(0 0 0 / 0.18);
-  --glass: rgb(251 250 248 / 0.75);
+  --glass: rgb(246 248 250 / 0.75);
 
   --tc-gray: #6b6660;
   --tc-red: #c0392b;
