@@ -27,26 +27,28 @@ export async function generateMetadata({ params }: LayoutProps<"/[lang]">): Prom
   if (!isLocale(lang)) return {};
   const dict = getDictionary(lang);
   const description = site.description[lang];
+  const name = site.name[lang];
+  const author = site.author[lang];
   return {
     metadataBase: new URL(siteOrigin),
-    title: { default: `${site.name} — ${dict.meta.homeTitle}`, template: `%s — ${site.name}` },
+    title: { default: `${name} — ${dict.meta.homeTitle}`, template: `%s — ${name}` },
     description,
-    applicationName: site.name,
-    authors: [{ name: site.author }],
-    creator: site.author,
+    applicationName: name,
+    authors: [{ name: author }],
+    creator: author,
     alternates: {
       ...pageAlternates(lang),
-      types: { "application/rss+xml": [{ url: `/${lang}/rss.xml`, title: fmt(dict.meta.rssTitle, { site: site.name }) }] },
+      types: { "application/rss+xml": [{ url: `/${lang}/rss.xml`, title: fmt(dict.meta.rssTitle, { site: name }) }] },
     },
     openGraph: {
       type: "website",
-      siteName: site.name,
+      siteName: name,
       locale: localeTags[lang].replace("-", "_"),
       alternateLocale: locales.filter((l) => l !== lang).map((l) => localeTags[l].replace("-", "_")),
-      title: site.name,
+      title: name,
       description,
     },
-    twitter: { card: "summary_large_image", title: site.name, description },
+    twitter: { card: "summary_large_image", title: name, description },
     formatDetection: { telephone: false, email: false, address: false },
   };
 }

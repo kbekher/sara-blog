@@ -4,7 +4,8 @@ import { getDictionary } from "@/lib/i18n/get-dictionary";
 import { site } from "@/lib/site";
 import { loadOgFonts, OG_SIZE, OgCard } from "./_lib/og";
 
-export const alt = site.name;
+/** Static (not per-locale) alt text — the default locale's blog name. */
+export const alt = site.name[defaultLocale];
 export const size = OG_SIZE;
 export const contentType = "image/png";
 
@@ -12,7 +13,7 @@ export default async function Image({ params }: { params: Promise<{ lang: string
   const { lang } = await params;
   const locale = isLocale(lang) ? lang : defaultLocale;
   const dict = getDictionary(locale);
-  const title = site.name;
+  const title = site.name[locale];
   const subtitle = site.description[locale];
   const eyebrow = dict.home.eyebrow;
 

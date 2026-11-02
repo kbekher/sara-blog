@@ -9,7 +9,7 @@ import "../globals.css";
 import "@/components/admin/admin.css";
 
 export const metadata: Metadata = {
-  title: { default: "Админка · Sara's Blog", template: "%s · Админка" },
+  title: { default: `Админка · ${site.name[defaultLocale]}`, template: "%s · Админка" },
   robots: { index: false, follow: false, nocache: true, googleBot: { index: false, follow: false } },
 };
 

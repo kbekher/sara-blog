@@ -30,7 +30,7 @@ export default async function HomePage({ params, searchParams }: PageProps<"/[la
       <header className="pt-16 pb-12 sm:pt-24 sm:pb-16 motion-safe:animate-[fade-up_800ms_var(--ease-out-expo)_both]">
         <p className="mb-4 text-xs font-medium tracking-[0.14em] text-accent uppercase">{dict.home.eyebrow}</p>
         <h1 className="font-serif text-[2.75rem] leading-[1.04] font-semibold tracking-[-0.025em] text-fg-strong text-balance sm:text-[4rem]">
-          {site.name}
+          {site.name[lang]}
         </h1>
         <p className="mt-5 max-w-[34ch] font-serif text-xl leading-snug text-fg-muted italic text-pretty sm:text-2xl">
           {site.description[lang]}

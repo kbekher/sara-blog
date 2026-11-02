@@ -17,7 +17,7 @@ export function AdminTopBar() {
     >
       <div className="mx-auto flex h-12 max-w-6xl items-center gap-2 px-4 sm:px-6">
         <Link href="/admin" className="mr-auto truncate text-sm text-fg-muted transition-colors hover:text-fg">
-          <span className="font-serif text-base font-semibold text-fg-strong">Sara&apos;s Blog</span>
+          <span className="font-serif text-base font-semibold text-fg-strong">{site.name[defaultLocale]}</span>
           <span className="mx-1.5 text-fg-subtle">·</span>
           Админка
         </Link>

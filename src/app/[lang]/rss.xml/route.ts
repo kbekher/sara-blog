@@ -51,7 +51,7 @@ export async function GET(_request: Request, { params }: RouteContext<"/[lang]/r
         `<link>${xml(link)}</link>`,
         `<guid isPermaLink="true">${xml(link)}</guid>`,
         `<pubDate>${post.publishedAt.toUTCString()}</pubDate>`,
-        `<dc:creator>${xml(site.author)}</dc:creator>`,
+        `<dc:creator>${xml(site.author[lang])}</dc:creator>`,
         post.excerpt ? `<description>${cdata(post.excerpt)}</description>` : "",
         ...post.tags.map((t) => `<category>${xml(t.name)}</category>`),
         `<content:encoded>${cdata(cover + absolutizeHtml(post.contentHtml))}</content:encoded>`,
@@ -66,7 +66,7 @@ export async function GET(_request: Request, { params }: RouteContext<"/[lang]/r
   const body = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:media="http://search.yahoo.com/mrss/">
 <channel>
-<title>${xml(`${site.name} — ${dict.meta.homeTitle}`)}</title>
+<title>${xml(`${site.name[lang]} — ${dict.meta.homeTitle}`)}</title>
 <link>${xml(home)}</link>
 <description>${xml(site.description[lang])}</description>
 <language>${localeTags[lang]}</language>
