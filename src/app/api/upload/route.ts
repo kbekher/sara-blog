@@ -4,6 +4,7 @@
  *  - "blob.upload-completed": sent by Vercel Blob's servers (no cookie); authenticity is verified by
  *    `handleUpload` via the request signature.
  */
+import { list } from "@vercel/blob";
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { authorizeAdminRequest, jsonError } from "@/lib/auth/guard";
 
@@ -55,5 +56,40 @@ export async function POST(request: Request): Promise<Response> {
   } catch (error) {
     console.error("[upload] failed", error);
     return jsonError(400, "Не удалось загрузить изображение. Допустимы JPEG, PNG, WebP, GIF, AVIF до 10 МБ.");
+  }
+}
+
+/**
+ * GET /api/upload — admin-only readiness check (used by the editor to explain a failed upload,
+ * and handy to open in the browser while logged in). Never returns the token itself.
+ */
+export async function GET(request: Request): Promise<Response> {
+  const auth = await authorizeAdminRequest(request, { mutating: false });
+  if (auth.response) return auth.response;
+  const headers = { "Cache-Control": "no-store" };
+
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    return Response.json(
+      {
+        ok: false,
+        error:
+          "хранилище изображений не подключено. Vercel → Storage → Create → Blob → Connect to project (все окружения), затем Redeploy.",
+      },
+      { headers },
+    );
+  }
+  try {
+    await list({ limit: 1 });
+    return Response.json({ ok: true, message: "Хранилище Vercel Blob подключено и отвечает." }, { headers });
+  } catch (error) {
+    console.error("[upload] Blob check failed", error);
+    const message = error instanceof Error ? error.message : String(error);
+    return Response.json(
+      {
+        ok: false,
+        error: `Vercel Blob отклонил токен (${message}). Переподключите Blob-хранилище к проекту и сделайте Redeploy.`,
+      },
+      { headers },
+    );
   }
 }

@@ -97,6 +97,13 @@ export async function uploadImage(
     return { url: blob.url, width: size?.width ?? null, height: size?.height ?? null };
   } catch (error) {
     if (signal?.aborted) throw new Error("Загрузка отменена.");
+    // The Blob client hides the server's reason behind "Failed to retrieve the client token" — ask the server why.
+    if (error instanceof Error && /client token/i.test(error.message)) {
+      const reason = await fetch("/api/upload", { cache: "no-store" })
+        .then((r) => r.json() as Promise<{ ok?: boolean; error?: string }>)
+        .catch(() => null);
+      if (reason && reason.ok === false && reason.error) throw new Error(`Не удалось загрузить «${file.name}»: ${reason.error}`);
+    }
     const detail = error instanceof Error && error.message ? ` (${error.message})` : "";
     throw new Error(`Не удалось загрузить «${file.name}». Проверьте интернет и попробуйте ещё раз.${detail}`);
   }

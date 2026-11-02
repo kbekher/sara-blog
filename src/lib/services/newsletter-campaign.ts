@@ -57,7 +57,8 @@ function toUserMessage(status: number, message: string): string {
   if (status === 401) return "Brevo отклонил API-ключ — проверьте BREVO_API_KEY (должен начинаться с xkeysib-).";
   if (status === 402) return "Недостаточно кредитов Brevo для рассылки — пополните или смените тариф.";
   if (status === 403) {
-    return "Brevo запретил отправку: аккаунт ещё не активирован для рассылок или исчерпан лимит тарифа.";
+    // Brevo uses 403 for several reasons (account not yet validated for campaigns, plan limits, …) — show its own words.
+    return `Brevo запретил отправку${message ? `: «${message}»` : ""}. Обычно это значит, что аккаунт ещё не активирован для рассылок (Brevo → завершите активацию аккаунта) или исчерпан лимит тарифа.`;
   }
   if (status === 429) return "Слишком много запросов к Brevo — попробуйте через минуту.";
   if (status === 400 && /sender/i.test(message)) {
