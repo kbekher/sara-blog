@@ -18,24 +18,24 @@
 :root,
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #0a0c0f;
-  --bg-elevated: #13161a;
-  --bg-sunken: #06080a;
-  --surface: rgb(255 255 255 / 0.04);
-  --surface-hover: rgb(255 255 255 / 0.07);
-  --border: rgb(255 255 255 / 0.09);
-  --border-strong: rgb(255 255 255 / 0.16);
-  --fg: #e4e7ea; /* body — ~15.5:1 */
-  --fg-strong: #f3f5f7; /* headings */
-  --fg-muted: #9ca3ab; /* meta — ~7.6:1 */
-  --fg-subtle: #79818a; /* captions, hints — ~4.6:1 */
-  --accent: #9db8cf; /* glacier blue (from her mountain/sea photos); links/focus */
-  --accent-hover: #bdd0e0;
-  --accent-fg: #0a0f15;
-  --selection: rgb(157 184 207 / 0.3);
-  --code-bg: #11141a;
+  --bg: #142030;
+  --bg-elevated: #1e3442;
+  --bg-sunken: #0f1925;
+  --surface: rgb(233 216 200 / 0.05);
+  --surface-hover: rgb(233 216 200 / 0.08);
+  --border: rgb(233 216 200 / 0.1);
+  --border-strong: rgb(233 216 200 / 0.18);
+  --fg: #e9d8c8; /* Siesta Tan; body — 11.8:1 */
+  --fg-strong: #f6ede4; /* headings */
+  --fg-muted: #85a3b2; /* Grauzone; meta — 6.2:1 */
+  --fg-subtle: #7895a4; /* captions, hints — 5.2:1 */
+  --accent: #ff5c8d; /* Stellar Strawberry; links/focus */
+  --accent-hover: #ff85a8;
+  --accent-fg: #142030;
+  --selection: rgb(255 92 141 / 0.3);
+  --code-bg: #18283a;
   --shadow-lg: 0 24px 60px -20px rgb(0 0 0 / 0.7);
-  --glass: rgb(10 12 15 / 0.72);
+  --glass: rgb(20 32 48 / 0.72);
 
   /* Editor text-color palette (theme-aware; referenced via data-color="name") */
   --tc-gray: #a3a09b;
@@ -59,24 +59,24 @@
 
 :root[data-theme="light"] {
   color-scheme: light;
-  --bg: #f6f8fa;
-  --bg-elevated: #ffffff;
-  --bg-sunken: #edf0f3;
-  --surface: rgb(0 0 0 / 0.03);
-  --surface-hover: rgb(0 0 0 / 0.06);
-  --border: rgb(0 0 0 / 0.08);
-  --border-strong: rgb(0 0 0 / 0.15);
-  --fg: #24282d;
-  --fg-strong: #111417;
-  --fg-muted: #59616b;
-  --fg-subtle: #666e78;
-  --accent: #3d5f7c;
-  --accent-hover: #2c4a64;
+  --bg: #f4eadf;
+  --bg-elevated: #fbf6f0;
+  --bg-sunken: #e9d8c8;
+  --surface: rgb(20 32 48 / 0.04);
+  --surface-hover: rgb(20 32 48 / 0.07);
+  --border: rgb(20 32 48 / 0.1);
+  --border-strong: rgb(20 32 48 / 0.18);
+  --fg: #142030;
+  --fg-strong: #0b1420;
+  --fg-muted: #3e5463;
+  --fg-subtle: #52656f;
+  --accent: #732553;
+  --accent-hover: #5a1c41;
   --accent-fg: #ffffff;
-  --selection: rgb(61 95 124 / 0.16);
-  --code-bg: #edf0f3;
+  --selection: rgb(115 37 83 / 0.16);
+  --code-bg: #ece0d3;
   --shadow-lg: 0 24px 60px -24px rgb(0 0 0 / 0.18);
-  --glass: rgb(246 248 250 / 0.75);
+  --glass: rgb(244 234 223 / 0.78);
 
   --tc-gray: #6b6660;
   --tc-red: #c0392b;
