@@ -54,8 +54,25 @@ Tip: once the project is linked to Vercel (`pnpm dlx vercel link`), `pnpm dlx ve
 | `BREVO_LIST_ID` | for newsletter | *Contacts* → *Lists* → create a list → its numeric **ID**. |
 | `BREVO_DOI_TEMPLATE_ID` | no | Enables **double opt-in** (recommended in the EU): *Campaigns → Templates* → create a template from the "Double opt-in" type → its ID. |
 | `BREVO_DOI_REDIRECT_URL` | no | Where the confirmation link sends people (defaults to the site's home page). |
+| `BREVO_SENDER_EMAIL` | for post emails | Sender address for the automatic "new post" emails. Must be added **and verified** in Brevo → *Senders, Domains & Dedicated IPs* → **Senders**. Without it posts are published but not emailed. |
+| `BREVO_SENDER_NAME` | no | Sender name shown in the inbox (defaults to the site author, «Сара»). |
 
 Optional Brevo nicety: create a contact attribute `LANGUAGE` (text); every subscriber gets `RU`. It's silently skipped if absent.
+
+### Newsletter: new posts are emailed automatically
+
+When Sara publishes a post, the blog emails the Brevo list automatically (a Brevo email campaign styled like
+`emails/new-post.html`: cover, title, subtitle, the first paragraphs and a «Читать полностью →» button to the post).
+
+- **Publish now** → the email goes out immediately. **Scheduled post** → the campaign is scheduled in Brevo for the
+  publish time, so subscribers get it when the post appears.
+- **Never twice:** each post is emailed at most once. «Обновить», re-publishing or changing the date of an
+  already-sent post sends nothing. Moving a *scheduled* post moves its email; unpublishing or deleting a scheduled
+  post cancels its email.
+- The publish dialog has a checkbox «Отправить письмо подписчикам» (on by default) to skip the email for a post.
+- An email failure never blocks publishing: the post goes live and the admin shows why the email wasn't sent.
+- Needs `BREVO_API_KEY`, `BREVO_LIST_ID` and a verified `BREVO_SENDER_EMAIL`; check everything at
+  `/api/newsletter/check` while logged in. Brevo's free plan allows 300 emails/day.
 
 ### ⚠ The `$` in password hashes
 

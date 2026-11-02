@@ -18,6 +18,7 @@ import type {
   PostEditorData,
   PostListItem,
   PublishInput,
+  PublishResult,
   SavePostInput,
   TagItem,
 } from "@/lib/admin/types";
@@ -40,6 +41,7 @@ import {
   upsertPostText,
   urlsReferencedElsewhere,
 } from "@/lib/posts/admin-queries";
+import { cancelScheduledNewsletter, syncNewsletterOnPublish } from "@/lib/posts/newsletter";
 import { POSTS_TAG, postTag } from "@/lib/posts/public-queries";
 import { SLUG_MAX_LENGTH, SLUG_PATTERN, slugify } from "@/lib/services/slug";
 
@@ -162,6 +164,7 @@ const saveSchema = z.object({
 const publishSchema = z.object({
   id: z.uuid("Некорректный идентификатор поста."),
   publishAt: z.iso.datetime({ offset: true, message: "Некорректная дата публикации." }).optional(),
+  notify: z.boolean().optional(),
 });
 
 const idSchema = z.uuid("Некорректный идентификатор поста.");
@@ -270,14 +273,12 @@ export async function savePost(
 }
 
 /** Publish now or schedule. */
-export async function publishPost(
-  input: PublishInput,
-): Promise<ActionResult<{ status: "published" | "scheduled"; publishedAt: string }>> {
+export async function publishPost(input: PublishInput): Promise<ActionResult<PublishResult>> {
   const denied = await unauthorized();
   if (denied) return denied;
   const parsed = publishSchema.safeParse(input);
   if (!parsed.success) return validationFailure(parsed.error);
-  const { id, publishAt } = parsed.data;
+  const { id, publishAt, notify = true } = parsed.data;
 
   try {
     const bundle = await getPostBundle(id);
@@ -304,9 +305,26 @@ export async function publishPost(
     await db.update(posts).set({ status: "published", publishedAt, updatedAt: now }).where(eq(posts.id, id));
 
     invalidatePublic(post.slug);
+
+    // Email the subscribers (once per post). Never fails the publish — the outcome is reported to the UI.
+    const newsletter = await syncNewsletterOnPublish({
+      post,
+      content: { slug: post.slug, title: source.title, excerpt: source.excerpt, plainText: source.plainText, cover: post.cover ?? null },
+      publishedAt,
+      notify,
+      now,
+    }).catch((error: unknown): PublishResult["newsletter"] => {
+      console.error("[admin:publishPost] newsletter", error);
+      return { status: "failed", message: "Не удалось отправить письмо подписчикам.", newsletterSentAt: post.newsletterSentAt?.toISOString() ?? null };
+    });
+
     return {
       ok: true,
-      data: { status: publishedAt.getTime() > now.getTime() ? "scheduled" : "published", publishedAt: publishedAt.toISOString() },
+      data: {
+        status: publishedAt.getTime() > now.getTime() ? "scheduled" : "published",
+        publishedAt: publishedAt.toISOString(),
+        newsletter,
+      },
     };
   } catch (error) {
     return unexpected("publishPost", error);
@@ -323,9 +341,11 @@ export async function unpublishPost(id: string): Promise<ActionResult> {
       .update(posts)
       .set({ status: "draft", updatedAt: new Date() })
       .where(eq(posts.id, id))
-      .returning({ slug: posts.slug });
+      .returning({ id: posts.id, slug: posts.slug, newsletterCampaignId: posts.newsletterCampaignId, newsletterSentAt: posts.newsletterSentAt });
     if (!row) return NOT_FOUND;
     invalidatePublic(row.slug);
+    // A scheduled email must not go out for a post that is no longer public (best-effort; logged on failure).
+    await cancelScheduledNewsletter(row);
     return { ok: true };
   } catch (error) {
     return unexpected("unpublishPost", error);
@@ -343,6 +363,7 @@ export async function deletePost(id: string): Promise<ActionResult> {
     const blobUrls = await collectBlobUrls(post);
     const shared = blobUrls.length > 0 ? await urlsReferencedElsewhere(blobUrls, id) : new Set<string>();
 
+    await cancelScheduledNewsletter(post, { store: null }); // best-effort; never fails the action
     await db.delete(posts).where(eq(posts.id, id)); // post text rows & post_tags cascade
     if (post.status === "published") invalidatePublic(post.slug);
 

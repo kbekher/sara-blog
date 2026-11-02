@@ -7,6 +7,10 @@ Styled like the blog (dark, Source Serif 4 / Georgia headings, warm amber accent
 | `double-opt-in.html` | Contacts → Forms/Double opt-in → template id → `BREVO_DOI_TEMPLATE_ID` | `{{ doubleoptin }}` (confirmation link) |
 | `new-post.html` | Campaigns → Create email → "Paste your code" for each new post; edit the ✏️ parts | `{{ unsubscribe }}` |
 
+> **`new-post.html` is now only for manual campaigns.** Publishing a post emails subscribers automatically with
+> the same design, generated in code (`src/lib/services/newsletter-campaign.ts` — edit the look there). Use this
+> file only for one-off emails you send by hand from Brevo.
+
 How to add: Brevo → **Campaigns → Templates → New template → Paste your code** → paste the file contents → Save & activate.
 For the double opt-in template also set the template's **Sender** to your verified sender and tick
 **"Double opt-in (DOI) template"** if Brevo shows that option.

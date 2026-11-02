@@ -30,6 +30,10 @@ export type PostEditorData = {
   updatedAt: string;
   tags: TagItem[];
   source: PostContentInput;
+  /** ISO: when the "new post" email was sent — or is scheduled to go out (future). Null = never emailed. */
+  newsletterSentAt?: string | null;
+  /** Whether new-post emails can be sent (Brevo env vars set). Unknown (undefined) for a not-yet-saved post. */
+  newsletterConfigured?: boolean;
 };
 
 export type PostListItem = {
@@ -58,6 +62,24 @@ export type PublishInput = {
   id: string;
   /** ISO; omitted or in the past → publish now; future → schedule */
   publishAt?: string;
+  /** Email the subscribers about this post (default true). Never sends twice for the same post. */
+  notify?: boolean;
+};
+
+/** What happened to the subscriber email on publish. */
+export type NewsletterOutcome = {
+  status: "sent" | "scheduled" | "skipped" | "failed";
+  reason?: "disabled" | "not_configured" | "already_sent" | "in_progress" | "cancelled";
+  /** Russian, user-facing (failures and notes). */
+  message?: string;
+  /** The post's `newsletterSentAt` after the action (ISO; future = scheduled), or null. */
+  newsletterSentAt: string | null;
+};
+
+export type PublishResult = {
+  status: "published" | "scheduled";
+  publishedAt: string;
+  newsletter?: NewsletterOutcome;
 };
 
 export type UnsplashPhoto = {

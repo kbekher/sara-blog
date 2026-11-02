@@ -2,7 +2,10 @@ import "server-only";
 import { siteLocale } from "@/lib/i18n/config";
 import { site } from "@/lib/site";
 
-const API = "https://api.brevo.com/v3";
+/** Brevo API base URL. Overridable via BREVO_API_URL (local mocks/tests); defaults to the public v3 API. */
+export function brevoApiUrl(): string {
+  return (process.env.BREVO_API_URL?.trim() || "https://api.brevo.com/v3").replace(/\/+$/, "");
+}
 
 export class NewsletterError extends Error {
   constructor(
@@ -22,7 +25,7 @@ type BrevoError = { code?: string; message?: string };
 
 async function post(path: string, apiKey: string, payload: unknown): Promise<{ ok: boolean; status: number; body: BrevoError }> {
   try {
-    const res = await fetch(`${API}${path}`, {
+    const res = await fetch(`${brevoApiUrl()}${path}`, {
       method: "POST",
       headers: { "api-key": apiKey, "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify(payload),

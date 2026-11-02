@@ -4,14 +4,13 @@
  * without ever returning secrets (the API key is never echoed).
  */
 import { authorizeAdminRequest } from "@/lib/auth/guard";
-
-const API = "https://api.brevo.com/v3";
+import { brevoApiUrl } from "@/lib/services/brevo";
 
 type Check = { ok: boolean; item: string; detail: string };
 
 async function brevo(path: string, apiKey: string): Promise<{ status: number; body: Record<string, unknown> }> {
   try {
-    const res = await fetch(`${API}${path}`, {
+    const res = await fetch(`${brevoApiUrl()}${path}`, {
       headers: { "api-key": apiKey, accept: "application/json" },
       cache: "no-store",
       signal: AbortSignal.timeout(10_000),
@@ -32,6 +31,7 @@ export async function GET(request: Request): Promise<Response> {
   const apiKey = process.env.BREVO_API_KEY?.trim() ?? "";
   const rawList = process.env.BREVO_LIST_ID?.trim() ?? "";
   const rawTemplate = process.env.BREVO_DOI_TEMPLATE_ID?.trim() ?? "";
+  const senderEmail = process.env.BREVO_SENDER_EMAIL?.trim() ?? "";
   const listId = Number(rawList);
   const templateId = Number(rawTemplate);
 
@@ -51,6 +51,16 @@ export async function GET(request: Request): Promise<Response> {
   } else {
     add(true, "BREVO_DOI_TEMPLATE_ID", "не задан — подписчики добавляются сразу, без письма-подтверждения");
   }
+
+  add(
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(senderEmail),
+    "BREVO_SENDER_EMAIL",
+    !senderEmail
+      ? "не задан — без него письма о новых записях не отправляются. Укажите адрес отправителя, подтверждённый в Brevo"
+      : /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(senderEmail)
+        ? `= ${senderEmail}${process.env.BREVO_SENDER_NAME?.trim() ? ` (имя: ${process.env.BREVO_SENDER_NAME.trim()})` : ""}`
+        : `не похож на email: «${senderEmail}»`,
+  );
 
   // 2. Live checks against Brevo.
   if (apiKey) {
@@ -74,6 +84,25 @@ export async function GET(request: Request): Promise<Response> {
       );
     }
 
+    if (account.status === 200 && senderEmail) {
+      const res = await brevo("/senders", apiKey);
+      const senders = Array.isArray(res.body.senders) ? (res.body.senders as { email?: string; active?: boolean }[]) : [];
+      const sender = senders.find((s) => s.email?.toLowerCase() === senderEmail.toLowerCase());
+      if (res.status !== 200) {
+        add(false, "Отправитель", `не удалось получить список отправителей (HTTP ${res.status}): ${String(res.body.message ?? "")}`);
+      } else if (!sender) {
+        add(
+          false,
+          "Отправитель",
+          `${senderEmail} не найден среди отправителей Brevo. Добавьте его: Brevo → Senders, Domains & Dedicated IPs → Senders → Add sender, затем подтвердите адрес по ссылке из письма (или подтвердите домен).`,
+        );
+      } else if (sender.active !== true) {
+        add(false, "Отправитель", `${senderEmail} есть в Brevo, но не подтверждён — откройте письмо от Brevo и нажмите ссылку подтверждения (Senders → Resend).`);
+      } else {
+        add(true, "Отправитель", `${senderEmail} подтверждён — письма о новых записях будут уходить автоматически`);
+      }
+    }
+
     if (account.status === 200 && templateId > 0) {
       const t = await brevo(`/smtp/templates/${templateId}`, apiKey);
       if (t.status !== 200) {
@@ -92,7 +121,7 @@ export async function GET(request: Request): Promise<Response> {
 
   const allOk = checks.every((c) => c.ok);
   return Response.json(
-    { ok: allOk, summary: allOk ? "Всё настроено — подписка должна работать." : "Есть проблемы — см. пункты с ok:false.", checks },
+    { ok: allOk, summary: allOk ? "Всё настроено — подписка и письма о новых записях должны работать." : "Есть проблемы — см. пункты с ok:false.", checks },
     { headers: { "Cache-Control": "no-store" } },
   );
 }

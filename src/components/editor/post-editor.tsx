@@ -31,7 +31,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import type { CoverImage } from "@/db/schema";
-import type { PostContentInput, PostEditorData, SavePostInput } from "@/lib/admin/types";
+import type { PostContentInput, PostEditorData, PublishResult, SavePostInput } from "@/lib/admin/types";
 import { siteLocale } from "@/lib/i18n/config";
 import { typographText } from "@/lib/content/typography";
 import { deletePost, publishPost, savePost, unpublishPost } from "@/app/admin/actions";
@@ -71,6 +71,8 @@ type Data = {
   status: "draft" | "published";
   publishedAt: string | null;
   updatedAt: string | null;
+  newsletterSentAt: string | null;
+  newsletterConfigured: boolean | undefined;
   cover: CoverImage | null;
   featured: boolean;
   tagNames: string[];
@@ -111,6 +113,8 @@ function fromInitial(initial: PostEditorData | null): Data {
     status: initial?.status ?? "draft",
     publishedAt: initial?.publishedAt ?? null,
     updatedAt: initial?.updatedAt ?? null,
+    newsletterSentAt: initial?.newsletterSentAt ?? null,
+    newsletterConfigured: initial?.newsletterConfigured,
     cover: initial?.cover ?? null,
     featured: initial?.featured ?? false,
     tagNames: initial?.tags.map((t) => t.name).filter(Boolean) ?? [],
@@ -375,24 +379,55 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
     return id;
   };
 
-  const handlePublish = async ({ publishAt }: { publishAt?: string }) => {
+  const newsletterToast = (outcome: PublishResult["newsletter"]) => {
+    if (!outcome) return;
+    if (outcome.status === "failed") {
+      toast.error("Письмо подписчикам не отправлено", { description: outcome.message, duration: 0 });
+    } else if (outcome.reason === "not_configured") {
+      toast.info("Письмо не отправлено", { description: "Рассылка не настроена (см. /api/newsletter/check)." });
+    } else if (outcome.reason === "cancelled") {
+      toast.info("Письмо подписчикам отменено", { description: outcome.message });
+    }
+  };
+
+  const newsletterLine = (outcome: PublishResult["newsletter"]): string => {
+    if (outcome?.status === "sent") return " Письмо подписчикам отправлено.";
+    if (outcome?.status === "scheduled" && outcome.newsletterSentAt) {
+      return ` Письмо подписчикам уйдёт ${formatDateTime(outcome.newsletterSentAt)}.`;
+    }
+    return "";
+  };
+
+  const handlePublish = async ({ publishAt, notify }: { publishAt?: string; notify: boolean }) => {
     setBusy("publish");
     try {
       const id = await ensureSaved();
       if (!id) return;
-      const res = await publishPost({ id, publishAt });
+      const res = await publishPost({ id, publishAt, notify });
       if (!res.ok) {
         toast.error("Не удалось опубликовать", { description: res.error });
         return;
       }
-      update((cur) => ({ ...cur, status: "published", publishedAt: res.data.publishedAt }));
+      const newsletter = res.data.newsletter;
+      update((cur) => ({
+        ...cur,
+        status: "published",
+        publishedAt: res.data.publishedAt,
+        ...(newsletter && {
+          newsletterSentAt: newsletter.newsletterSentAt,
+          ...(newsletter.reason === "not_configured" && { newsletterConfigured: false }),
+        }),
+      }));
       setPublishOpen(false);
       const slug = dataRef.current.slug;
       if (res.data.status === "scheduled") {
-        toast.success("Запись запланирована", { description: `Появится ${formatDateTime(res.data.publishedAt)}.` });
+        toast.success("Запись запланирована", {
+          description: `Появится ${formatDateTime(res.data.publishedAt)}.${newsletterLine(newsletter)}`,
+        });
       } else {
-        toast.success("Опубликовано! 🎉", { description: "Запись уже на сайте.", links: publicLinks(slug) });
+        toast.success("Опубликовано! 🎉", { description: `Запись уже на сайте.${newsletterLine(newsletter)}`, links: publicLinks(slug) });
       }
+      newsletterToast(newsletter);
     } catch {
       toast.error("Не удалось опубликовать", { description: "Нет связи с сервером. Попробуйте ещё раз." });
     } finally {
@@ -426,7 +461,12 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
         toast.error("Не удалось снять с публикации", { description: res.error });
         return;
       }
-      update((cur) => ({ ...cur, status: "draft" }));
+      // The server cancels a scheduled (not yet sent) subscriber email on unpublish.
+      update((cur) => ({
+        ...cur,
+        status: "draft",
+        newsletterSentAt: cur.newsletterSentAt && Date.parse(cur.newsletterSentAt) > Date.now() ? null : cur.newsletterSentAt,
+      }));
       setConfirm(null);
       toast.success("Запись снята с публикации", { description: "Теперь она снова черновик и не видна читателям." });
     } catch {
@@ -716,6 +756,8 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
         onClose={() => setPublishOpen(false)}
         status={displayStatus}
         publishedAt={data.publishedAt}
+        newsletterSentAt={data.newsletterSentAt}
+        newsletterConfigured={data.newsletterConfigured}
         busy={busy === "publish"}
         onPublish={(input) => void handlePublish(input)}
       />

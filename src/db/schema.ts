@@ -52,6 +52,10 @@ export const posts = pgTable(
     cover: jsonb("cover").$type<CoverImage | null>(),
     featured: boolean("featured").notNull().default(false),
     publishedAt: timestamp("published_at", { withTimezone: true }),
+    /** Brevo email campaign announcing this post (null = never emailed). */
+    newsletterCampaignId: integer("newsletter_campaign_id"),
+    /** When the announcement email was sent, or is scheduled to be sent (future = scheduled, not sent yet). */
+    newsletterSentAt: timestamp("newsletter_sent_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

@@ -20,6 +20,7 @@ import {
 } from "@/db/schema";
 import type { PostEditorData, PostListItem, TagItem } from "@/lib/admin/types";
 import { siteLocale } from "@/lib/i18n/config";
+import { isCampaignConfigured } from "@/lib/services/newsletter-campaign";
 import { nextFreeSlug, slugify } from "@/lib/services/slug";
 
 /** A post with its text row (`siteLocale`; null for a post that has none yet) and tags. */
@@ -69,6 +70,8 @@ export function toEditorData(bundle: PostBundle): PostEditorData {
     publishedAt: post.publishedAt?.toISOString() ?? null,
     updatedAt: post.updatedAt.toISOString(),
     tags: bundle.tags.map(toTagItem),
+    newsletterSentAt: post.newsletterSentAt?.toISOString() ?? null,
+    newsletterConfigured: isCampaignConfigured(),
     source: source
       ? { title: source.title, excerpt: source.excerpt, contentJson: source.contentJson }
       : { title: "", excerpt: "", contentJson: { type: "doc", content: [{ type: "paragraph" }] } },

@@ -8,6 +8,13 @@
       "when": 1793613895422,
       "tag": "0000_init",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793630581974,
+      "tag": "0001_newsletter_campaign",
+      "breakpoints": true
     }
   ]
 }

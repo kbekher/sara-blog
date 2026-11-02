@@ -1,10 +1,10 @@
 "use client";
 /** Publish now / schedule. */
 import { useState } from "react";
-import { Loader2, Send, CalendarClock } from "lucide-react";
+import { Loader2, Send, CalendarClock, Mail } from "lucide-react";
 import { clsx } from "clsx";
 import { Dialog } from "./dialog";
-import { timeZoneLabel } from "./time";
+import { formatDateTime, timeZoneLabel } from "./time";
 
 type Props = {
   open: boolean;
@@ -12,8 +12,12 @@ type Props = {
   /** current state of the post */
   status: "draft" | "published" | "scheduled";
   publishedAt: string | null;
+  /** ISO: when the subscriber email was sent (past) or is scheduled (future); null = never emailed. */
+  newsletterSentAt: string | null;
+  /** false = Brevo campaigns aren't configured on the server; undefined = unknown (new post). */
+  newsletterConfigured?: boolean;
   busy: boolean;
-  onPublish: (input: { publishAt?: string }) => void;
+  onPublish: (input: { publishAt?: string; notify: boolean }) => void;
 };
 
 /** yyyy-MM-ddTHH:mm in local time, for <input type="datetime-local">. */
@@ -36,7 +40,14 @@ export function PublishDialog(props: Props) {
   );
 }
 
-function PublishForm({ status, publishedAt, busy, onPublish, onClose }: Props) {
+function PublishForm({ status, publishedAt, newsletterSentAt, newsletterConfigured, busy, onPublish, onClose }: Props) {
+  // Snapshot "now" when the dialog opens (the form remounts on every open).
+  const [openedAt] = useState(() => Date.now());
+  const emailScheduled = !!newsletterSentAt && Date.parse(newsletterSentAt) > openedAt;
+  const emailSent = !!newsletterSentAt && !emailScheduled;
+  const notConfigured = newsletterConfigured === false;
+  // A post that is already live (published before emails were automatic) isn't emailed unless asked explicitly.
+  const [notify, setNotify] = useState(() => !notConfigured && (status !== "published" || emailScheduled));
   const [when, setWhen] = useState<"now" | "later">(status === "scheduled" ? "later" : "now");
   const [at, setAt] = useState(() => {
     if (publishedAt && status === "scheduled") return toLocalInput(new Date(publishedAt));
@@ -57,9 +68,9 @@ function PublishForm({ status, publishedAt, busy, onPublish, onClose }: Props) {
         setError("Это время уже прошло — выберите время в будущем или «Сейчас».");
         return;
       }
-      onPublish({ publishAt: date.toISOString() });
+      onPublish({ publishAt: date.toISOString(), notify: notify && !notConfigured });
     } else {
-      onPublish({});
+      onPublish({ notify: notify && !notConfigured });
     }
   };
 
@@ -121,6 +132,44 @@ function PublishForm({ status, publishedAt, busy, onPublish, onClose }: Props) {
           </p>
         </div>
       ) : null}
+
+      <div>
+        {emailSent ? (
+          <p className="admin-hint flex items-center gap-2">
+            <Mail className="size-4 shrink-0" aria-hidden />
+            Письмо уже отправлено {formatDateTime(newsletterSentAt!)} — повторно оно не уйдёт.
+          </p>
+        ) : (
+          <>
+            <label
+              className={clsx(
+                "flex items-start gap-2.5 rounded-xl border px-3.5 py-3 text-sm transition-colors",
+                notConfigured ? "cursor-not-allowed border-border text-fg-subtle" : "cursor-pointer",
+                !notConfigured && (notify ? "border-accent bg-surface-hover text-fg-strong" : "border-border text-fg-muted hover:border-border-strong"),
+              )}
+            >
+              <input
+                type="checkbox"
+                checked={notify && !notConfigured}
+                disabled={notConfigured}
+                onChange={(e) => setNotify(e.target.checked)}
+                className="mt-0.5 accent-[var(--accent)]"
+                aria-describedby="publish-notify-hint"
+              />
+              <span>Отправить письмо подписчикам</span>
+            </label>
+            <p id="publish-notify-hint" className="admin-hint">
+              {notConfigured
+                ? "Рассылка не настроена (см. /api/newsletter/check)."
+                : emailScheduled
+                  ? `Письмо запланировано на ${formatDateTime(newsletterSentAt!)}. При смене даты оно перенесётся; снимите галочку, чтобы отменить.`
+                  : when === "later"
+                    ? "Письмо уйдёт автоматически в момент публикации. Подписчики получат его один раз."
+                    : "Письмо уйдёт сразу после публикации. Подписчики получат его один раз."}
+            </p>
+          </>
+        )}
+      </div>
 
       {error ? (
         <p role="alert" className="text-sm text-[var(--tc-red)]">
