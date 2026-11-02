@@ -47,7 +47,14 @@ async function post(path: string, apiKey: string, payload: unknown): Promise<{ o
 export async function subscribe(email: string): Promise<{ doubleOptIn: boolean }> {
   const apiKey = process.env.BREVO_API_KEY?.trim();
   const listId = Number(process.env.BREVO_LIST_ID);
-  if (!apiKey || !(listId > 0)) throw new NewsletterError(503, "not_configured");
+  if (!apiKey || !(listId > 0)) {
+    console.error(
+      `[brevo] not configured: BREVO_API_KEY ${apiKey ? "set" : "missing"}, BREVO_LIST_ID ${
+        process.env.BREVO_LIST_ID ? (listId > 0 ? "ok" : "is not a number (must be the numeric list ID)") : "missing"
+      }. Check /api/newsletter/check while logged in.`,
+    );
+    throw new NewsletterError(503, "not_configured");
+  }
 
   const templateId = Number(process.env.BREVO_DOI_TEMPLATE_ID);
   const doubleOptIn = templateId > 0;
