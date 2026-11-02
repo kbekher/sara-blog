@@ -1,0 +1,123 @@
+import {
+  pgTable,
+  uuid,
+  text,
+  timestamp,
+  jsonb,
+  integer,
+  boolean,
+  primaryKey,
+  index,
+  pgEnum,
+} from "drizzle-orm/pg-core";
+import type { JSONContent } from "@tiptap/core";
+
+export const postStatus = pgEnum("post_status", ["draft", "published"]);
+export const localeEnum = pgEnum("locale", ["ru", "uk", "en"]);
+
+export type CoverImage = {
+  url: string;
+  alt: string;
+  width?: number;
+  height?: number;
+  /** Dominant color (hex) used as placeholder while loading. */
+  color?: string;
+  /** Tiny blurred preview (Unsplash blur_hash is not used; we use a small data URL or color). */
+  blurDataURL?: string;
+  source: "unsplash" | "upload";
+  /** Required attribution for Unsplash photos. */
+  credit?: {
+    name: string;
+    username: string;
+    profileUrl: string;
+    photoUrl: string;
+  };
+};
+
+/**
+ * A post. Shared, language-independent fields live here.
+ * Status model:
+ *  - draft                                  → never public
+ *  - published + publishedAt <= now()       → live
+ *  - published + publishedAt  > now()       → scheduled (becomes live automatically)
+ */
+export const posts = pgTable(
+  "posts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** URL slug, shared by all locales: /{lang}/posts/{slug}. Latin, kebab-case. */
+    slug: text("slug").notNull().unique(),
+    status: postStatus("status").notNull().default("draft"),
+    sourceLocale: localeEnum("source_locale").notNull().default("ru"),
+    cover: jsonb("cover").$type<CoverImage | null>(),
+    featured: boolean("featured").notNull().default(false),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("posts_status_published_idx").on(t.status, t.publishedAt)],
+);
+
+/** One row per (post, locale). The source locale row is authored; others are machine-translated (DeepL) and editable. */
+export const postTranslations = pgTable(
+  "post_translations",
+  {
+    postId: uuid("post_id")
+      .notNull()
+      .references(() => posts.id, { onDelete: "cascade" }),
+    locale: localeEnum("locale").notNull(),
+    title: text("title").notNull().default(""),
+    /** Short description used in lists, meta description and OG. */
+    excerpt: text("excerpt").notNull().default(""),
+    /** Tiptap/ProseMirror document — source of truth for editing. */
+    contentJson: jsonb("content_json").$type<JSONContent>().notNull(),
+    /** Sanitized HTML rendered from contentJson at save time — what the public site renders. */
+    contentHtml: text("content_html").notNull().default(""),
+    /** Plain text for search & reading time. */
+    plainText: text("plain_text").notNull().default(""),
+    readingMinutes: integer("reading_minutes").notNull().default(1),
+    /** true = produced by DeepL and not hand-edited since. */
+    isMachineTranslated: boolean("is_machine_translated").notNull().default(false),
+    /** Hash of the source translation this was produced from; used to detect stale translations. */
+    sourceHash: text("source_hash"),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.postId, t.locale] })],
+);
+
+/** Tags: slug is Latin; display names are per-locale (auto-translated, editable). */
+export const tags = pgTable("tags", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  slug: text("slug").notNull().unique(),
+  names: jsonb("names").$type<{ ru: string; uk: string; en: string }>().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const postTags = pgTable(
+  "post_tags",
+  {
+    postId: uuid("post_id")
+      .notNull()
+      .references(() => posts.id, { onDelete: "cascade" }),
+    tagId: uuid("tag_id")
+      .notNull()
+      .references(() => tags.id, { onDelete: "cascade" }),
+  },
+  (t) => [primaryKey({ columns: [t.postId, t.tagId] }), index("post_tags_tag_idx").on(t.tagId)],
+);
+
+/** Failed admin login attempts, for brute-force throttling. */
+export const loginAttempts = pgTable(
+  "login_attempts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ip: text("ip").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("login_attempts_ip_idx").on(t.ip, t.createdAt)],
+);
+
+export type Post = typeof posts.$inferSelect;
+export type NewPost = typeof posts.$inferInsert;
+export type PostTranslation = typeof postTranslations.$inferSelect;
+export type Tag = typeof tags.$inferSelect;

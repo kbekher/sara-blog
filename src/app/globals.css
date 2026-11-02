@@ -1,0 +1,202 @@
+@import "tailwindcss";
+
+/*
+ * ─────────────────────────────────────────────────────────────
+ *  Sara's Blog — design tokens
+ *  Dark is the default theme. Theme is set on <html data-theme="dark|light">
+ *  by an inline script before paint (see src/components/theme-script.tsx),
+ *  defaulting to the visitor's OS preference, then to dark.
+ *
+ *  Reading best practices baked in:
+ *   - body text never pure white on pure black (reduces halation/eye strain)
+ *   - all text tokens meet WCAG AA (≥ 4.5:1) on --bg in both themes
+ *   - measure ~ 66ch, body 1.1875rem/1.7 (scales down slightly on mobile)
+ * ─────────────────────────────────────────────────────────────
+ */
+
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0b0b0c;
+  --bg-elevated: #151517;
+  --bg-sunken: #070708;
+  --surface: rgb(255 255 255 / 0.04);
+  --surface-hover: rgb(255 255 255 / 0.07);
+  --border: rgb(255 255 255 / 0.09);
+  --border-strong: rgb(255 255 255 / 0.16);
+  --fg: #e8e6e3; /* body — ~15.5:1 */
+  --fg-strong: #f5f4f2; /* headings */
+  --fg-muted: #a3a09b; /* meta — ~7.6:1 */
+  --fg-subtle: #75726d; /* captions, hints — ~4.6:1 */
+  --accent: #d4a373; /* warm amber; links/focus */
+  --accent-hover: #e6bb8f;
+  --accent-fg: #1a1208;
+  --selection: rgb(212 163 115 / 0.3);
+  --code-bg: #141416;
+  --shadow-lg: 0 24px 60px -20px rgb(0 0 0 / 0.7);
+  --glass: rgb(11 11 12 / 0.72);
+
+  /* Editor text-color palette (theme-aware; referenced via data-color="name") */
+  --tc-gray: #a3a09b;
+  --tc-red: #f28b82;
+  --tc-orange: #f6ad6b;
+  --tc-yellow: #f1d27a;
+  --tc-green: #8fd19e;
+  --tc-blue: #8ab4f8;
+  --tc-purple: #c3a6f5;
+  --tc-pink: #f2a0c8;
+  /* Highlight (background) palette, via data-highlight="name" */
+  --hl-gray: rgb(163 160 155 / 0.22);
+  --hl-red: rgb(242 139 130 / 0.22);
+  --hl-orange: rgb(246 173 107 / 0.22);
+  --hl-yellow: rgb(241 210 122 / 0.24);
+  --hl-green: rgb(143 209 158 / 0.2);
+  --hl-blue: rgb(138 180 248 / 0.22);
+  --hl-purple: rgb(195 166 245 / 0.22);
+  --hl-pink: rgb(242 160 200 / 0.22);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #fbfaf8;
+  --bg-elevated: #ffffff;
+  --bg-sunken: #f3f1ed;
+  --surface: rgb(0 0 0 / 0.03);
+  --surface-hover: rgb(0 0 0 / 0.06);
+  --border: rgb(0 0 0 / 0.08);
+  --border-strong: rgb(0 0 0 / 0.15);
+  --fg: #2a2826;
+  --fg-strong: #141312;
+  --fg-muted: #5f5b56;
+  --fg-subtle: #7a756f;
+  --accent: #9a5b25;
+  --accent-hover: #7d4719;
+  --accent-fg: #ffffff;
+  --selection: rgb(154 91 37 / 0.18);
+  --code-bg: #f1eee9;
+  --shadow-lg: 0 24px 60px -24px rgb(0 0 0 / 0.18);
+  --glass: rgb(251 250 248 / 0.75);
+
+  --tc-gray: #6b6660;
+  --tc-red: #c0392b;
+  --tc-orange: #b35c12;
+  --tc-yellow: #8a6a00;
+  --tc-green: #2e7d4a;
+  --tc-blue: #2563c9;
+  --tc-purple: #7a46c4;
+  --tc-pink: #b8327a;
+  --hl-gray: rgb(107 102 96 / 0.14);
+  --hl-red: rgb(239 68 68 / 0.16);
+  --hl-orange: rgb(249 115 22 / 0.16);
+  --hl-yellow: rgb(250 204 21 / 0.3);
+  --hl-green: rgb(34 197 94 / 0.16);
+  --hl-blue: rgb(59 130 246 / 0.15);
+  --hl-purple: rgb(147 51 234 / 0.13);
+  --hl-pink: rgb(236 72 153 / 0.14);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-bg-sunken: var(--bg-sunken);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-fg: var(--fg);
+  --color-fg-strong: var(--fg-strong);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-fg: var(--accent-fg);
+
+  /* Titles & italic/display text: Source Serif 4 (loaded via next/font in src/app/fonts.ts) */
+  --font-serif: var(--font-source-serif), "Source Serif 4", Georgia, "Times New Roman", serif;
+  /* Body, UI, info text: native system stack */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+
+  --ease-apple: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Base ─────────────────────────────────────────────── */
+html {
+  background: var(--bg);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-behavior: smooth;
+  scrollbar-gutter: stable;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "kern", "liga", "calt";
+}
+
+::selection {
+  background: var(--selection);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* Smooth theme transitions (only for color props, only after first paint) */
+html.theme-ready body,
+html.theme-ready header,
+html.theme-ready footer {
+  transition:
+    background-color 0.4s var(--ease-apple),
+    color 0.4s var(--ease-apple),
+    border-color 0.4s var(--ease-apple);
+}
+
+/* ── Editor color marks (shared by public renderer & admin editor) ── */
+[data-color="gray"] { color: var(--tc-gray); }
+[data-color="red"] { color: var(--tc-red); }
+[data-color="orange"] { color: var(--tc-orange); }
+[data-color="yellow"] { color: var(--tc-yellow); }
+[data-color="green"] { color: var(--tc-green); }
+[data-color="blue"] { color: var(--tc-blue); }
+[data-color="purple"] { color: var(--tc-purple); }
+[data-color="pink"] { color: var(--tc-pink); }
+
+mark,
+[data-highlight] {
+  color: inherit;
+  border-radius: 0.2em;
+  padding: 0.05em 0.15em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  background: var(--hl-yellow);
+}
+[data-highlight="gray"] { background: var(--hl-gray); }
+[data-highlight="red"] { background: var(--hl-red); }
+[data-highlight="orange"] { background: var(--hl-orange); }
+[data-highlight="yellow"] { background: var(--hl-yellow); }
+[data-highlight="green"] { background: var(--hl-green); }
+[data-highlight="blue"] { background: var(--hl-blue); }
+[data-highlight="purple"] { background: var(--hl-purple); }
+[data-highlight="pink"] { background: var(--hl-pink); }
