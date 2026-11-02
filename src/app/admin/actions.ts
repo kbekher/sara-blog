@@ -44,7 +44,7 @@ import {
 } from "@/lib/posts/admin-queries";
 import { POSTS_TAG, postTag } from "@/lib/posts/public-queries";
 import { hashSource } from "@/lib/services/content-hash";
-import { isDeepLConfigured, TranslationError } from "@/lib/services/deepl";
+import { isTranslatorConfigured, TranslationError } from "@/lib/services/translator";
 import { SLUG_MAX_LENGTH, SLUG_PATTERN, slugify } from "@/lib/services/slug";
 import { translatePost } from "@/lib/services/translate-post";
 
@@ -304,7 +304,7 @@ export async function savePost(
   }
 }
 
-/** Publish now or schedule. Translates missing/stale locales via DeepL unless translate=false. */
+/** Publish now or schedule. Translates missing/stale locales via Microsoft Translator unless translate=false. */
 export async function publishPost(
   input: PublishInput,
 ): Promise<ActionResult<{ status: "published" | "scheduled"; publishedAt: string }>> {
@@ -341,8 +341,8 @@ export async function publishPost(
     const rows: TranslationRow[] = [];
 
     if (translate) {
-      if (!isDeepLConfigured()) {
-        console.warn("[admin:publishPost] DEEPL_API_KEY not set — publishing without translations (site falls back to the source language).");
+      if (!isTranslatorConfigured()) {
+        console.warn("[admin:publishPost] AZURE_TRANSLATOR_KEY not set — publishing without translations (site falls back to the source language).");
       } else {
         // Missing locales and stale MACHINE translations are (re)translated. Hand-edited translations are
         // never overwritten automatically (use "retranslate" for that); they keep showing as stale in the editor.
@@ -429,13 +429,13 @@ export async function deletePost(id: string): Promise<ActionResult> {
   }
 }
 
-/** Re-run DeepL for given locales (default: all non-source), overwriting them. */
+/** Re-run machine translation for given locales (default: all non-source), overwriting them. */
 export async function retranslatePost(id: string, targetLocales?: Locale[]): Promise<ActionResult<PostEditorData>> {
   const denied = await unauthorized();
   if (denied) return denied;
   if (!idSchema.safeParse(id).success) return NOT_FOUND;
   if (targetLocales && !targetLocales.every((l) => isLocale(l))) return fail("Неизвестный язык перевода.");
-  if (!isDeepLConfigured()) return fail("Перевод недоступен: не задан DEEPL_API_KEY (см. README).");
+  if (!isTranslatorConfigured()) return fail("Перевод недоступен: не задан AZURE_TRANSLATOR_KEY (см. README).");
 
   try {
     const bundle = await getPostBundle(id);

@@ -1,5 +1,5 @@
 "use client";
-/** Publish now / schedule, with the "translate with DeepL" option. */
+/** Publish now / schedule, with the "translate automatically" option. */
 import { useState } from "react";
 import { Loader2, Send, CalendarClock } from "lucide-react";
 import { clsx } from "clsx";
@@ -131,7 +131,7 @@ function PublishForm({ status, publishedAt, busy, onPublish, onClose }: Props) {
           className="mt-1 size-4 accent-[var(--accent)]"
         />
         <span>
-          <span className="block text-sm font-medium text-fg">Автоматически перевести на украинский и английский (DeepL)</span>
+          <span className="block text-sm font-medium text-fg">Автоматически перевести на украинский и английский</span>
           <span className="mt-0.5 block text-[0.8125rem] text-fg-subtle">
             Переводятся только отсутствующие и устаревшие версии. Потом их можно поправить вручную.
           </span>

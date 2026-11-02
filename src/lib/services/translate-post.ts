@@ -2,7 +2,7 @@ import "server-only";
 import type { JSONContent } from "@tiptap/core";
 import { htmlToJson, renderContent } from "@/lib/content";
 import type { Locale } from "@/lib/i18n/config";
-import { translateBatch } from "./deepl";
+import { translateBatch } from "./translator";
 
 export type TranslatedPost = {
   locale: Locale;
@@ -31,7 +31,7 @@ const NAMED_ENTITIES: Record<string, string> = {
   amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ",
   laquo: "«", raquo: "»", mdash: "—", ndash: "–", hellip: "…", ldquo: "“", rdquo: "”", lsquo: "‘", rsquo: "’", bdquo: "„",
 };
-/** Decodes the entities DeepL may emit when plain-text fields are sent through HTML mode. */
+/** Decodes the entities the translator may emit when plain-text fields are sent through HTML mode. */
 function decodeEntities(text: string): string {
   return text
     .replace(/<[^>]*>/g, "") // titles/excerpts are plain text — drop any stray tag
@@ -46,8 +46,8 @@ function decodeEntities(text: string): string {
 }
 
 /**
- * Translates one post into a single target locale with ONE DeepL call: title & excerpt are sent as
- * escaped HTML text alongside the body HTML, so everything shares a request (and tag handling).
+ * Translates one post into a single target locale with ONE Microsoft Translator call: title & excerpt are sent as
+ * escaped HTML text alongside the body HTML, so everything shares a request (and HTML handling).
  * The translated body is converted back to Tiptap JSON and re-rendered/sanitized by the content pipeline.
  */
 export async function translatePostTo(source: TranslationSource, target: Locale): Promise<TranslatedPost> {
@@ -75,7 +75,7 @@ export async function translatePost(source: TranslationSource, targets: Locale[]
   return Promise.all(unique.map((target) => translatePostTo(source, target)));
 }
 
-/** DeepL tends to capitalise single words ("семья" → "Family"); keep the source's initial case. */
+/** Machine translation tends to capitalise single words ("семья" → "Family"); keep the source's initial case. */
 function matchInitialCase(text: string, like: string): string {
   const first = like.charAt(0);
   if (first && first === first.toLowerCase() && first !== first.toUpperCase()) {

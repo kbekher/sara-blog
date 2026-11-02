@@ -1,11 +1,11 @@
 # Sara's Blog
 
 A calm, dark, multilingual personal blog — thoughts on life and a very uncommon life experience.
-Sara writes in Russian; posts are machine-translated to Ukrainian and English with DeepL and can be hand-edited.
+Sara writes in Russian; posts are machine-translated to Ukrainian and English with Microsoft Translator and can be hand-edited.
 
 The blog and author names are localized — «Блог Сары» (ru), «Блог Сари» (uk), “Sara's Blog” (en) — and live, with the per-locale descriptions, in `src/lib/site.ts`.
 
-**Stack:** Next.js 16 (App Router, Cache Components) · React 19 · TypeScript · Tailwind CSS v4 · Drizzle ORM + Neon Postgres · Vercel Blob · Tiptap v3 · DeepL · Unsplash · LanguageTool · Brevo. Hosted on Vercel.
+**Stack:** Next.js 16 (App Router, Cache Components) · React 19 · TypeScript · Tailwind CSS v4 · Drizzle ORM + Neon Postgres · Vercel Blob · Tiptap v3 · Microsoft Translator (Azure AI Translator) · Unsplash · LanguageTool · Brevo. Hosted on Vercel.
 
 ## Features
 
@@ -13,7 +13,7 @@ The blog and author names are localized — «Блог Сары» (ru), «Бло
 - **Admin** at `/admin` (Russian UI, single author, email + password):
   - rich editor (headings, lists, quotes, links, images, text colors & highlights, alignment) with spell/grammar checking via LanguageTool;
   - cover images from **Unsplash** search (with required attribution) or uploads to **Vercel Blob**;
-  - **one-click translation** to the other two languages (DeepL, HTML-aware so formatting survives); translations are editable and marked *stale* when the source changes;
+  - **one-click translation** to the other two languages (Microsoft Translator, HTML-aware so formatting survives); translations are editable and marked *stale* when the source changes;
   - drafts, **publish now** or **schedule** for later, unpublish, delete;
   - tags (auto-transliterated URLs, names auto-translated).
 - **Newsletter** signup (Brevo, optional double opt-in), RSS, sitemap, SEO/OG images.
@@ -46,7 +46,9 @@ Tip: once the project is linked to Vercel (`pnpm dlx vercel link`), `pnpm dlx ve
 | `ADMIN_PASSWORD_HASH` | yes | Output of `pnpm hash-password`. **Use the `b64:` form** (see note below). |
 | `SESSION_SECRET` | yes | Random string ≥ 32 chars: `openssl rand -base64 32`. Changing it signs everyone out. |
 | `UNSPLASH_ACCESS_KEY` | for Unsplash covers | [unsplash.com/developers](https://unsplash.com/developers) → *Your apps* → *New Application* → **Access Key**. New apps are in *Demo* mode (**50 requests/hour**). Once the site is live, click *Apply for Production* (needs attribution + download tracking, both implemented) to get **5,000 requests/hour**. |
-| `DEEPL_API_KEY` | for translation | [deepl.com/pro-api](https://www.deepl.com/pro-api) → **DeepL API Free** (500,000 chars/month; key ends in `:fx`). Without it, posts publish in Russian only and the other languages fall back to Russian. |
+| `AZURE_TRANSLATOR_KEY` | for translation | [Azure portal](https://portal.azure.com) → *Create a resource* → **Translator** → pricing tier **F0** (free, 2M chars/month) → *Keys and Endpoint* → **KEY 1**. Without it, posts publish in Russian only and the other languages fall back to Russian. See [Translations](#translations). |
+| `AZURE_TRANSLATOR_REGION` | for translation | The resource's **Location/Region** from the same *Keys and Endpoint* page, e.g. `westeurope`. Required for regional resources (the default when you pick a region); leave empty only for a *Global* resource. |
+| `AZURE_TRANSLATOR_ENDPOINT` | no | Defaults to `https://api.cognitive.microsofttranslator.com`. Only change for a custom endpoint or local testing. |
 | `LANGUAGETOOL_API_URL` | no | Defaults to the free public API `https://api.languagetool.org/v2` (20 req/min, 20k chars/request). Point to a self-hosted server or keep default. |
 | `LANGUAGETOOL_USERNAME`, `LANGUAGETOOL_API_KEY` | no | LanguageTool Premium credentials (higher limits, more rules). |
 | `BREVO_API_KEY` | for newsletter | [app.brevo.com](https://app.brevo.com) → *Settings* → **SMTP & API** → *API keys* → Generate. |
@@ -77,12 +79,28 @@ pnpm db:studio     # browse data
 
 **On Vercel, migrations run automatically on every deploy**: `vercel.json` sets the build command to `pnpm vercel-build` = `tsx scripts/migrate.ts && next build`. If `DATABASE_URL` is missing, a **production** build fails loudly; preview/local builds just skip migrations with a warning.
 
+## Translations
+
+Posts are translated with **Microsoft Translator** (Azure AI Translator, Text Translation API v3). The **F0** tier is free
+permanently and includes **2 million characters per month** (HTML markup counts too). Setup:
+
+1. [Azure portal](https://portal.azure.com) → *Create a resource* → search **Translator** → *Create*.
+2. Pick a resource group, region (e.g. **West Europe**), a name, and pricing tier **F0**.
+3. Open the resource → **Keys and Endpoint**: copy **KEY 1** to `AZURE_TRANSLATOR_KEY` and **Location/Region** to `AZURE_TRANSLATOR_REGION`.
+
+Code blocks, inline code and photo credits are never translated; formatting (bold, colours, links, images) is preserved.
+Large posts are split into several pieces automatically to stay within the API's 50,000-characters-per-request limit.
+
+**When it is not configured** (or the monthly quota is used up), publishing still works: without a key the post is
+published without translations and the Ukrainian/English pages show the Russian original; on a translation error the
+admin shows the reason, and the post can be published with *Автоматически перевести* unchecked.
+
 ## How Sara writes
 
 1. Go to `/admin` → sign in with email + password (5 wrong attempts from one IP lock login for 15 minutes).
 2. **Новый пост** → write in Russian. Pick a cover (Unsplash search or upload), add tags. Drafts are saved with **Сохранить**.
 3. The URL (slug) is generated from the title by transliteration (`Привет, мир` → `privet-mir`). It stays fixed once the post has been published, unless changed by hand.
-4. **Опубликовать**: translations to Ukrainian and English are created (or refreshed if the Russian text changed) by DeepL, then the post goes live. Translations can be opened and edited; hand-edited translations are never overwritten automatically — use *Перевести заново* to refresh them explicitly.
+4. **Опубликовать**: translations to Ukrainian and English are created (or refreshed if the Russian text changed) by Microsoft Translator, then the post goes live. Translations can be opened and edited; hand-edited translations are never overwritten automatically — use *Перевести заново* to refresh them explicitly.
 5. **Schedule**: choose a date/time in the future when publishing. The post is stored as *published* with a future date, shows as *Запланирован* in the admin, and appears on the site automatically once that time passes (no cron needed — public queries only show posts whose publish time is in the past).
 6. *Снять с публикации* hides a post again (it keeps its URL); *Удалить* removes it and its uploaded images.
 
@@ -91,7 +109,7 @@ pnpm db:studio     # browse data
 1. Push the repo to GitHub and **Import** it at [vercel.com/new](https://vercel.com/new) (framework: Next.js — detected automatically).
 2. In the project: **Storage → Create → Neon Postgres** and **Storage → Create → Blob**; connect both to all environments. This injects `DATABASE_URL` and `BLOB_READ_WRITE_TOKEN`.
    For Neon pick the **Free** plan, region **Frankfurt (aws-eu-central-1)**, and leave **Auth** and **Realtime** off (the blog has its own admin login). Server functions are pinned to `fra1` (Frankfurt) in `vercel.json` so they sit next to the database — if you choose another DB region, change `regions` there to match.
-3. **Settings → Environment Variables**: add `NEXT_PUBLIC_SITE_URL`, `ADMIN_EMAIL`, `ADMIN_PASSWORD_HASH`, `SESSION_SECRET`, and the optional service keys (Unsplash, DeepL, Brevo, LanguageTool).
+3. **Settings → Environment Variables**: add `NEXT_PUBLIC_SITE_URL`, `ADMIN_EMAIL`, `ADMIN_PASSWORD_HASH`, `SESSION_SECRET`, and the optional service keys (Unsplash, Azure Translator, Brevo, LanguageTool).
 4. **Deploy.** The build runs migrations, then `next build`. Optionally seed once from your machine: `pnpm dlx vercel env pull .env.local && pnpm db:seed`.
 5. Add your domain under **Settings → Domains**, update `NEXT_PUBLIC_SITE_URL`, redeploy.
 6. Apply for Unsplash *Production* access once the site is public.
@@ -106,7 +124,7 @@ src/proxy.ts           locale redirects + admin auth gate (Next 16's "middleware
 src/db/                Drizzle schema & client
 src/lib/auth/          JWT session, password check, login throttling, request guards
 src/lib/content/       Tiptap JSON ⇄ sanitized HTML pipeline (shared by editor, actions, site)
-src/lib/services/      DeepL, translation, Unsplash, Brevo, LanguageTool, slugs, hashing, rate limit
+src/lib/services/      Microsoft Translator, post translation, Unsplash, Brevo, LanguageTool, slugs, hashing, rate limit
 src/lib/posts/         public (cached) and admin (uncached) queries
 scripts/               hash-password, migrate, seed
 drizzle/               SQL migrations
@@ -116,4 +134,4 @@ drizzle/               SQL migrations
 
 - The newsletter endpoint's rate limit is in-memory (per serverless instance, best-effort); add a Vercel Firewall rate-limit rule on `/api/newsletter` for stronger protection.
 - Unsplash search results are cached for ~10 minutes to save quota.
-- DeepL Free allows 500k characters/month; a typical post (≈ 8k characters) costs ≈ 16k characters to translate into both languages.
+- Azure Translator F0 allows 2M characters/month; a typical post (≈ 8k characters plus markup) costs ≈ 16–20k characters to translate into both languages.

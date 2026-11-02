@@ -1,6 +1,6 @@
 /**
  * Inserts one sample published post ("Привет, мир") with a few formatting features, plus EN/UK
- * translations when DEEPL_API_KEY is set. Idempotent: does nothing if slug "privet-mir" exists.
+ * translations when AZURE_TRANSLATOR_KEY is set. Idempotent: does nothing if slug "privet-mir" exists.
  *
  *   npm run db:seed
  *
@@ -14,7 +14,7 @@ import { db } from "@/db";
 import { postTags, posts } from "@/db/schema";
 import { renderContent } from "@/lib/content";
 import { hashSource } from "@/lib/services/content-hash";
-import { isDeepLConfigured } from "@/lib/services/deepl";
+import { isTranslatorConfigured } from "@/lib/services/translator";
 import { translatePost } from "@/lib/services/translate-post";
 import { normalizeTagNames, resolveTagIds, runBatch, upsertTranslation } from "@/lib/posts/admin-queries";
 
@@ -75,10 +75,10 @@ async function main() {
   const rendered = renderContent(doc, "ru");
   const sourceHash = hashSource({ title, excerpt, contentJson: rendered.json });
 
-  const translations = isDeepLConfigured()
+  const translations = isTranslatorConfigured()
     ? await translatePost({ locale: "ru", title, excerpt, contentHtml: rendered.html }, ["uk", "en"])
     : [];
-  if (translations.length === 0) console.log("ℹ DEEPL_API_KEY not set — seeding the Russian version only.");
+  if (translations.length === 0) console.log("ℹ AZURE_TRANSLATOR_KEY not set — seeding the Russian version only.");
 
   const tagIds = await resolveTagIds(normalizeTagNames(["о блоге", "жизнь"], "ru"), "ru");
 

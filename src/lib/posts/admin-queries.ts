@@ -19,7 +19,7 @@ import type { PostEditorData, PostListItem } from "@/lib/admin/types";
 import { locales, type Locale } from "@/lib/i18n/config";
 import { hashSource } from "@/lib/services/content-hash";
 import { nextFreeSlug, slugify } from "@/lib/services/slug";
-import { isDeepLConfigured } from "@/lib/services/deepl";
+import { isTranslatorConfigured } from "@/lib/services/translator";
 import { translateLabels } from "@/lib/services/translate-post";
 
 export type PostBundle = { post: Post; translations: PostTranslation[]; tags: Tag[] };
@@ -197,7 +197,7 @@ export function normalizeTagNames(names: string[], sourceLocale: Locale): { name
 
 /**
  * Finds or creates tags by (transliterated) slug and returns their ids in input order.
- * New tags get display names translated by DeepL when configured, otherwise the source text everywhere.
+ * New tags get display names translated by Microsoft Translator when configured, otherwise the source text everywhere.
  */
 export async function resolveTagIds(names: { name: string; slug: string }[], sourceLocale: Locale): Promise<string[]> {
   if (names.length === 0) return [];
@@ -208,7 +208,7 @@ export async function resolveTagIds(names: { name: string; slug: string }[], sou
 
   if (missing.length > 0) {
     const labels = missing.map((m) => m.name);
-    const translated = isDeepLConfigured()
+    const translated = isTranslatorConfigured()
       ? await translateLabels(labels, sourceLocale, [...locales])
       : ({ ru: labels, uk: labels, en: labels } as Record<Locale, string[]>);
     await db

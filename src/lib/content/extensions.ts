@@ -1,5 +1,5 @@
 /**
- * Tiptap extension set shared by the admin editor, the server-side renderer and the DeepL round-trip.
+ * Tiptap extension set shared by the admin editor, the server-side renderer and the machine-translation round-trip.
  *
  * Server-safe: no React, no DOM access at import time. The editor (client) adds UI-only extensions on top
  * (placeholder, LanguageTool decorations, smart typography input rules, image node view, …) — those never
@@ -203,12 +203,12 @@ type FigureImageOptions = ImageOptions & {
 
 /**
  * Block image rendered as `<figure><img …><figcaption>…</figcaption></figure>`.
- * Parses both bare `<img>` and `<figure>` (DeepL translates the figcaption text; alt stays as authored).
+ * Parses both bare `<img>` and `<figure>` (the translator translates the figcaption text; alt stays as authored).
  *
  * Stock photos carry a structured credit (`source`, `creditName`, `creditUrl`) stored as data-* attributes on
  * the <figure>. The visible credit line (`<span class="photo-credit" translate="no">Фото: <a>Name</a> на
  * <a>Unsplash</a></span>`) is always regenerated from those attributes and ignored when parsing the caption,
- * so a DeepL round-trip can never alter or duplicate it.
+ * so a translation round-trip can never alter or duplicate it.
  */
 export const FigureImage = Image.extend<FigureImageOptions>({
   draggable: true,

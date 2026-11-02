@@ -140,7 +140,7 @@ export function jsonToHtml(doc: JSONContent, locale: Locale = "ru"): string {
 }
 
 /**
- * Normalize foreign HTML (DeepL output, legacy content) before parsing:
+ * Normalize foreign HTML (machine-translation output, legacy content) before parsing:
  * h1 → h2 and h4–h6 → h3 so headings survive the [2, 3] level restriction.
  */
 function normalizeHeadings(html: string): string {
@@ -149,7 +149,7 @@ function normalizeHeadings(html: string): string {
     .replace(/<(\/?)h[4-6](\s|>)/gi, "<$1h3$2");
 }
 
-/** HTML → Tiptap JSON (sanitized first; used after DeepL translates HTML). */
+/** HTML → Tiptap JSON (sanitized first; used after machine translation of HTML). */
 export function htmlToJson(html: string): JSONContent {
   const clean = sanitizeHtml(normalizeHeadings(html));
   const json = generateJSON(clean, extensions()) as JSONContent;

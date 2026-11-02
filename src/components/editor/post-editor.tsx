@@ -550,7 +550,7 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
       }
       applyServerTranslations(res.data, [l]);
       setEditorKey((k) => k + 1);
-      toast.success(`Готово: ${localeNames[l]}`, { description: "Перевод обновлён через DeepL." });
+      toast.success(`Готово: ${localeNames[l]}`, { description: "Перевод обновлён (Microsoft Translator)." });
     } catch {
       toast.error("Не удалось перевести", { description: "Нет связи с сервером." });
     } finally {
@@ -826,7 +826,7 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
                 onClick={() => (draft ? setConfirm({ kind: "retranslate", locale: active }) : void handleRetranslate(active))}
               >
                 {busy === "retranslate" ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <RefreshCw className="size-4" aria-hidden />}
-                {draft ? "Перевести заново (DeepL)" : "Перевести (DeepL)"}
+                {draft ? "Перевести заново" : "Перевести"}
               </button>
             ) : null}
           </div>
@@ -895,14 +895,14 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
             <h2 className="mt-4 font-serif text-2xl text-fg-strong">Перевода на {localeNames[active].toLowerCase()} пока нет</h2>
             <p className="mx-auto mt-2 max-w-md text-sm text-fg-muted">
               {data.postId
-                ? "Переведите автоматически через DeepL и поправьте, если нужно. Или напишите версию сами."
+                ? "Переведите автоматически через Microsoft Translator и поправьте, если нужно. Или напишите версию сами."
                 : "Сначала напишите оригинал — запись сохранится автоматически, и её можно будет перевести."}
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-2">
               {data.postId ? (
                 <button type="button" className="admin-btn admin-btn-primary" disabled={!!busy} onClick={() => void handleRetranslate(active)}>
                   {busy === "retranslate" ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Languages className="size-4" aria-hidden />}
-                  Перевести через DeepL
+                  Перевести автоматически
                 </button>
               ) : null}
               <button type="button" className="admin-btn admin-btn-secondary" onClick={() => startManualTranslation(active)}>
@@ -1001,7 +1001,7 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
       <ConfirmDialog
         open={confirm?.kind === "retranslate"}
         title={`Перевести заново: ${confirm?.locale ? localeNames[confirm.locale] : ""}?`}
-        description="Текущая версия перевода (включая ваши правки) будет заменена новым переводом DeepL."
+        description="Текущая версия перевода (включая ваши правки) будет заменена новым машинным переводом."
         confirmLabel="Перевести заново"
         busy={busy === "retranslate"}
         onConfirm={() => confirm?.locale && void handleRetranslate(confirm.locale)}

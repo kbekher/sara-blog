@@ -12,8 +12,8 @@ export const localeNames: Record<Locale, string> = {
 export const localeShort: Record<Locale, string> = { ru: "RU", uk: "UA", en: "EN" };
 /** BCP-47 tags for <html lang>, hreflang and Intl formatting. */
 export const localeTags: Record<Locale, string> = { ru: "ru-RU", uk: "uk-UA", en: "en-US" };
-/** DeepL target language codes. */
-export const deeplTargets: Record<Locale, "RU" | "UK" | "EN-US"> = { ru: "RU", uk: "UK", en: "EN-US" };
+/** Microsoft Translator language codes. */
+export const translatorCodes: Record<Locale, string> = { ru: "ru", uk: "uk", en: "en" };
 /** LanguageTool language codes. */
 export const languageToolCodes: Record<Locale, string> = { ru: "ru-RU", uk: "uk-UA", en: "en-US" };
 

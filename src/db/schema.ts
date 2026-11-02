@@ -58,7 +58,7 @@ export const posts = pgTable(
   (t) => [index("posts_status_published_idx").on(t.status, t.publishedAt)],
 );
 
-/** One row per (post, locale). The source locale row is authored; others are machine-translated (DeepL) and editable. */
+/** One row per (post, locale). The source locale row is authored; others are machine-translated (Microsoft Translator) and editable. */
 export const postTranslations = pgTable(
   "post_translations",
   {
@@ -76,7 +76,7 @@ export const postTranslations = pgTable(
     /** Plain text for search & reading time. */
     plainText: text("plain_text").notNull().default(""),
     readingMinutes: integer("reading_minutes").notNull().default(1),
-    /** true = produced by DeepL and not hand-edited since. */
+    /** true = produced by machine translation and not hand-edited since. */
     isMachineTranslated: boolean("is_machine_translated").notNull().default(false),
     /** Hash of the source translation this was produced from; used to detect stale translations. */
     sourceHash: text("source_hash"),

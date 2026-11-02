@@ -70,7 +70,7 @@ export type PublishInput = {
   id: string;
   /** ISO; omitted or in the past → publish now; future → schedule */
   publishAt?: string;
-  /** default true: (re)translate missing/stale locales with DeepL before publishing */
+  /** default true: (re)translate missing/stale locales with Microsoft Translator before publishing */
   translate?: boolean;
 };
 
