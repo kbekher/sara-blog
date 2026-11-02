@@ -334,7 +334,8 @@ export function getExtensions(): AnyExtension[] {
         autolink: true,
         linkOnPaste: true,
         defaultProtocol: "https",
-        protocols: [...LINK_PROTOCOLS],
+        // No `protocols`: http/https/mailto are linkify built-ins; registering them again only triggers
+        // "linkifyjs: already initialized" console warnings. isAllowedUri below still enforces the allow-list.
         isAllowedUri: (url) => isAllowedHref(url),
         HTMLAttributes: { target: "_blank", rel: "noopener noreferrer nofollow", class: null },
       },

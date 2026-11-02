@@ -67,7 +67,7 @@ function toUserMessage(status: number, message: string): string {
   }
   if (status === 400) return `Brevo отклонил письмо: ${message || "некорректные данные"}.`;
   if (status === 404) return "Рассылка не найдена в Brevo.";
-  return `Ошибка Brevo (HTTP ${status}). Попробуйте позже.`;
+  return `Ошибка Brevo (HTTP ${status})${message ? `: «${message}»` : ""}. Попробуйте позже.`;
 }
 
 /* ───────────────────────── HTTP ───────────────────────── */
@@ -107,9 +107,14 @@ async function brevo(
   }
   if (res.ok || allow.includes(res.status)) return { status: res.status, body };
 
-  const message = typeof body.message === "string" ? body.message : "";
+  const message = typeof body.message === "string" ? body.message : text.slice(0, 200);
   console.error(`[newsletter] ${method} ${path} → HTTP ${res.status}`, body);
-  throw new CampaignError(res.status, toUserMessage(res.status, message), `${body.code ?? ""} ${message}`.trim());
+  const step = `${method} ${path.replace(/\/\d+/g, "/{id}")}`;
+  throw new CampaignError(
+    res.status,
+    `${toUserMessage(res.status, message)} [шаг: ${step}]`,
+    `${body.code ?? ""} ${message}`.trim(),
+  );
 }
 
 function requireConfig(): CampaignConfig {
@@ -371,6 +376,18 @@ export async function scheduleOrSendCampaign({ post, sendAt }: { post: CampaignP
   try {
     await brevo(config, "POST", `/emailCampaigns/${id}/sendNow`);
   } catch (error) {
+    // Some accounts refuse the sendNow route (e.g. HTTP 405/403). Fall back to scheduling the same
+    // campaign ~1 minute ahead, which Brevo then sends by itself.
+    if (error instanceof CampaignError && (error.status === 405 || error.status === 403 || error.status === 400)) {
+      const at = new Date(Date.now() + 60_000);
+      try {
+        await brevo(config, "PUT", `/emailCampaigns/${id}`, { scheduledAt: at.toISOString() });
+        console.warn(`[newsletter] sendNow refused (HTTP ${error.status}); campaign ${id} scheduled for ${at.toISOString()} instead`);
+        return { id, status: "sent", at };
+      } catch (fallbackError) {
+        console.error("[newsletter] scheduling fallback failed", fallbackError);
+      }
+    }
     // Don't leave an unsent draft behind (a retry creates a fresh campaign).
     await brevo(config, "DELETE", `/emailCampaigns/${id}`, undefined, { allow: [404] }).catch(() => {});
     throw error;
