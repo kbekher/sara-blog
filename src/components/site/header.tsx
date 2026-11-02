@@ -34,10 +34,10 @@ export function SiteHeader({ locale, dict }: { locale: Locale; dict: Dictionary 
       <div className="relative mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-5 sm:px-8">
         <Link
           href={`/${locale}`}
-          aria-label={fmt(dict.a11y.home, { site: site.name })}
+          aria-label={fmt(dict.a11y.home, { site: site.name[locale] })}
           className="font-serif text-[1.3125rem] font-semibold tracking-[-0.01em] text-fg-strong transition-opacity duration-300 ease-apple hover:opacity-80"
         >
-          {site.name}
+          {site.name[locale]}
         </Link>
 
         <div className="hidden items-center gap-3 md:flex">

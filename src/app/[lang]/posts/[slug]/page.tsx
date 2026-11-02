@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/posts/[slu
       // A not-yet-translated page shows the original text, so point search engines at the original.
       canonical: localePath(post.isFallback ? post.locale : lang, path),
     },
-    authors: [{ name: site.author }],
+    authors: [{ name: site.author[lang] }],
     openGraph: {
       type: "article",
       title: post.title,
@@ -49,7 +49,7 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/posts/[slu
       url: localePath(lang, path),
       publishedTime: post.publishedAt.toISOString(),
       modifiedTime: post.updatedAt.toISOString(),
-      authors: [site.author],
+      authors: [site.author[lang]],
       tags: post.tags.map((t) => t.name),
     },
     twitter: { card: "summary_large_image", title: post.title, description: post.excerpt || undefined },
@@ -112,7 +112,7 @@ async function PostContent({ params }: { params: PageProps<"/[lang]/posts/[slug]
             </p>
           )}
           <div lang={lang} className="mt-7 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-fg-muted">
-            <span className="text-fg">{site.author}</span>
+            <span className="text-fg">{site.author[lang]}</span>
             <span aria-hidden className="text-fg-subtle">
               ·
             </span>
@@ -287,13 +287,13 @@ function blogPostingLd(post: PostDetail, lang: Locale, url: string) {
     mainEntityOfPage: { "@type": "WebPage", "@id": url },
     datePublished: post.publishedAt.toISOString(),
     dateModified: post.updatedAt.toISOString(),
-    author: { "@type": "Person", name: site.author, url: absoluteUrl(`/${lang}`) },
-    publisher: { "@type": "Person", name: site.author },
+    author: { "@type": "Person", name: site.author[lang], url: absoluteUrl(`/${lang}`) },
+    publisher: { "@type": "Person", name: site.author[lang] },
     image: post.cover ? [post.cover.url] : undefined,
     keywords: post.tags.map((t) => t.name).join(", ") || undefined,
     ...(post.locale !== post.sourceLocale && post.isMachineTranslated
       ? { translationOfWork: { "@id": absoluteUrl(localePath(post.sourceLocale, `/posts/${post.slug}`)) } }
       : {}),
-    isPartOf: { "@type": "Blog", name: site.name, url: absoluteUrl(`/${lang}`) },
+    isPartOf: { "@type": "Blog", name: site.name[lang], url: absoluteUrl(`/${lang}`) },
   };
 }

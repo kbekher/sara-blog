@@ -4,8 +4,8 @@ import { site } from "@/lib/site";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: site.name,
-    short_name: site.name,
+    name: site.name[defaultLocale],
+    short_name: site.name[defaultLocale],
     description: site.description[defaultLocale],
     lang: defaultLocale,
     start_url: "/",

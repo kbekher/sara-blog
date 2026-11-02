@@ -23,7 +23,7 @@ export function SiteFooter({ locale, dict }: { locale: Locale; dict: Dictionary 
         <div className="flex flex-col gap-6">
           <div>
             <Link href={`/${locale}`} className="font-serif text-2xl font-semibold text-fg-strong">
-              {site.name}
+              {site.name[locale]}
             </Link>
             <p className="mt-3 max-w-[40ch] text-[0.9375rem] text-fg-muted text-pretty">{site.description[locale]}</p>
           </div>
@@ -66,7 +66,7 @@ export function SiteFooter({ locale, dict }: { locale: Locale; dict: Dictionary 
           </div>
 
           <p className="mt-auto text-sm text-fg-subtle">
-            © <CopyrightYear /> {site.author}. {dict.footer.rights}
+            © <CopyrightYear /> {site.author[locale]}. {dict.footer.rights}
           </p>
         </div>
 

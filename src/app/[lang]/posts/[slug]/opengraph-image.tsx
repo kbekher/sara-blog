@@ -5,7 +5,8 @@ import { getPostBySlug } from "@/lib/posts/public-queries";
 import { site } from "@/lib/site";
 import { loadCoverDataUrl, loadOgFonts, OG_SIZE, OgCard } from "../../_lib/og";
 
-export const alt = site.name;
+/** Static (not per-locale) alt text — the default locale's blog name. */
+export const alt = site.name[defaultLocale];
 export const size = OG_SIZE;
 export const contentType = "image/png";
 
@@ -15,8 +16,9 @@ export default async function Image({ params }: { params: Promise<{ lang: string
   const locale = isLocale(lang) ? lang : defaultLocale;
   const post = await getPostBySlug(locale, slug);
 
-  const title = post?.title ?? site.name;
-  const eyebrow = post ? `${site.name} · ${formatDate(locale, post.publishedAt)}` : site.name;
+  const name = site.name[locale];
+  const title = post?.title ?? name;
+  const eyebrow = post ? `${name} · ${formatDate(locale, post.publishedAt)}` : name;
   const [fonts, cover] = await Promise.all([
     loadOgFonts(`${eyebrow}${title}`),
     post?.cover ? loadCoverDataUrl(post.cover.url) : Promise.resolve(null),
