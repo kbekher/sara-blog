@@ -1,0 +1,466 @@
+/*
+ * ─────────────────────────────────────────────────────────────
+ *  .prose-sara — article typography for sanitized Tiptap HTML
+ *  Imported from src/app/globals.css. Uses design tokens only.
+ *
+ *  Layout: a "breakout" grid. The container is full-width; every child
+ *  sits in the centered 66ch content column (measured in the body font,
+ *  so headings and paragraphs share one left edge), while images and
+ *  figures span the wide column (up to 1000px).
+ * ─────────────────────────────────────────────────────────────
+ */
+
+.prose-sara {
+  --prose-measure: 66ch;
+  --prose-wide: 1000px;
+  --prose-gap: 1.25em;
+
+  font-size: 1.0625rem;
+  line-height: 1.7;
+  color: var(--fg);
+  hyphens: auto;
+  -webkit-hyphens: auto;
+  hanging-punctuation: first allow-end last;
+  overflow-wrap: break-word;
+  font-feature-settings: "kern", "liga", "calt";
+
+  display: grid;
+  grid-template-columns:
+    [full-start] minmax(0, 1fr)
+    [wide-start] minmax(0, calc((var(--prose-wide) - var(--prose-measure)) / 2))
+    [content-start] min(var(--prose-measure), 100%)
+    [content-end] minmax(0, calc((var(--prose-wide) - var(--prose-measure)) / 2))
+    [wide-end] minmax(0, 1fr)
+    [full-end];
+}
+@media (min-width: 768px) {
+  .prose-sara {
+    font-size: 1.1875rem;
+  }
+}
+
+/* Centered text column for every block */
+.prose-sara > * {
+  grid-column: content;
+  min-width: 0;
+  margin-block: 0;
+}
+.prose-sara > * + * {
+  margin-top: var(--prose-gap);
+}
+
+/* ── Paragraphs ─────────────────────────────────────── */
+.prose-sara p {
+  text-wrap: pretty;
+}
+.prose-sara > p:first-child {
+  font-size: 1.08em;
+  line-height: 1.65;
+  color: var(--fg-strong);
+}
+/* Empty paragraphs from the editor shouldn't collapse spacing oddly */
+.prose-sara p:empty {
+  min-height: 1lh;
+}
+
+/* ── Headings ───────────────────────────────────────── */
+.prose-sara h2,
+.prose-sara h3,
+.prose-sara h4 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  color: var(--fg-strong);
+  text-wrap: balance;
+  hyphens: manual;
+  -webkit-hyphens: manual;
+  scroll-margin-top: 6rem;
+}
+.prose-sara h2 {
+  font-size: 1.6em;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  margin-top: 2.2em;
+}
+.prose-sara h3 {
+  font-size: 1.28em;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  margin-top: 1.9em;
+}
+.prose-sara h4 {
+  font-size: 1.08em;
+  line-height: 1.4;
+  margin-top: 1.7em;
+}
+.prose-sara h2 + *,
+.prose-sara h3 + *,
+.prose-sara h4 + * {
+  margin-top: 0.7em;
+}
+.prose-sara > :first-child {
+  margin-top: 0;
+}
+
+/* ── Inline marks ───────────────────────────────────── */
+.prose-sara strong,
+.prose-sara b {
+  font-weight: 650;
+  color: var(--fg-strong);
+}
+.prose-sara em,
+.prose-sara i {
+  font-family: var(--font-serif);
+  font-style: italic;
+  /* Serif italic runs slightly small next to the system sans */
+  font-size: 1.04em;
+}
+.prose-sara u {
+  text-decoration-thickness: 0.06em;
+  text-underline-offset: 0.18em;
+}
+.prose-sara s,
+.prose-sara del {
+  text-decoration-thickness: 0.07em;
+  color: var(--fg-muted);
+}
+.prose-sara sub,
+.prose-sara sup {
+  font-size: 0.72em;
+  line-height: 0;
+}
+
+/* ── Links ──────────────────────────────────────────── */
+.prose-sara a {
+  color: var(--accent);
+  text-decoration-line: underline;
+  text-decoration-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  text-decoration-thickness: 0.06em;
+  text-underline-offset: 0.2em;
+  transition:
+    color 0.25s var(--ease-apple),
+    text-decoration-color 0.25s var(--ease-apple);
+}
+.prose-sara a:hover {
+  color: var(--accent-hover);
+  text-decoration-color: currentColor;
+}
+
+/* ── Blockquote ─────────────────────────────────────── */
+.prose-sara blockquote {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 1.12em;
+  line-height: 1.55;
+  color: var(--fg-strong);
+  border-left: 2px solid var(--accent);
+  padding: 0.1em 0 0.1em 1.2em;
+}
+.prose-sara blockquote > * + * {
+  margin-top: 0.8em;
+}
+.prose-sara blockquote em,
+.prose-sara blockquote i {
+  font-style: normal;
+}
+
+/* ── Lists ──────────────────────────────────────────── */
+.prose-sara ul,
+.prose-sara ol {
+  padding-left: 1.4em;
+}
+.prose-sara ul {
+  list-style: none;
+}
+.prose-sara ul > li {
+  position: relative;
+}
+.prose-sara ul > li::before {
+  content: "";
+  position: absolute;
+  left: -1.05em;
+  top: calc(0.85em - 0.16em);
+  width: 0.32em;
+  height: 0.32em;
+  border-radius: 50%;
+  background: var(--fg-subtle);
+}
+.prose-sara ol {
+  list-style: decimal;
+}
+.prose-sara ol > li::marker {
+  color: var(--fg-subtle);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.92em;
+}
+.prose-sara li + li {
+  margin-top: 0.45em;
+}
+.prose-sara li > p {
+  margin: 0;
+}
+.prose-sara li > p + p,
+.prose-sara li > ul,
+.prose-sara li > ol {
+  margin-top: 0.45em;
+}
+
+/* Task lists (Tiptap TaskList/TaskItem) */
+.prose-sara ul[data-type="taskList"] {
+  padding-left: 0;
+}
+.prose-sara ul[data-type="taskList"] > li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6em;
+}
+.prose-sara ul[data-type="taskList"] > li::before {
+  content: none;
+}
+.prose-sara ul[data-type="taskList"] > li > label {
+  flex: none;
+  display: inline-flex;
+  margin-top: 0.3em;
+}
+.prose-sara ul[data-type="taskList"] > li > div {
+  flex: 1;
+  min-width: 0;
+}
+.prose-sara ul[data-type="taskList"] input[type="checkbox"] {
+  width: 1em;
+  height: 1em;
+  accent-color: var(--accent);
+  pointer-events: none;
+}
+.prose-sara ul[data-type="taskList"] > li[data-checked="true"] > div {
+  color: var(--fg-muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--fg-subtle);
+}
+
+/* ── Divider: centered dinkus ───────────────────────── */
+.prose-sara hr {
+  border: 0;
+  height: auto;
+  margin-block: 2.4em;
+  text-align: center;
+  overflow: visible;
+}
+.prose-sara hr::before {
+  content: "*\2002*\2002*";
+  display: block;
+  font-family: var(--font-serif);
+  font-size: 1.1em;
+  line-height: 1;
+  letter-spacing: 0.4em;
+  color: var(--fg-subtle);
+}
+.prose-sara hr + * {
+  margin-top: 0;
+}
+
+/* ── Code ───────────────────────────────────────────── */
+.prose-sara code {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  padding: 0.12em 0.36em;
+  border-radius: 0.35em;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  hyphens: none;
+  -webkit-hyphens: none;
+}
+.prose-sara pre {
+  font-family: var(--font-mono);
+  font-size: 0.84em;
+  line-height: 1.6;
+  padding: 1.1em 1.25em;
+  border-radius: 1rem;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  overflow-x: auto;
+  tab-size: 2;
+  hyphens: none;
+  -webkit-hyphens: none;
+}
+.prose-sara pre code {
+  font-size: inherit;
+  padding: 0;
+  border: 0;
+  background: none;
+  border-radius: 0;
+}
+
+/* ── Media: break out of the text column ────────────── */
+.prose-sara > img,
+.prose-sara > figure,
+.prose-sara > p > img:only-child {
+  display: block;
+}
+.prose-sara > img,
+.prose-sara > figure {
+  grid-column: wide;
+  margin-top: 2em;
+}
+.prose-sara > img + *,
+.prose-sara > figure + * {
+  margin-top: 2em;
+}
+.prose-sara img {
+  width: 100%;
+  height: auto;
+  border-radius: 1.25rem;
+  background: var(--bg-sunken);
+}
+.prose-sara figure img {
+  margin-inline: auto;
+}
+.prose-sara figcaption {
+  max-width: 66ch;
+  margin: 0.8em auto 0;
+  text-align: center;
+  font-size: 0.8em;
+  line-height: 1.5;
+  color: var(--fg-subtle);
+  text-wrap: balance;
+}
+@media (max-width: 639px) {
+  /* Edge-to-edge media on phones (container has 1.25rem side padding) */
+  .prose-sara > img,
+  .prose-sara > figure > img {
+    width: calc(100% + 2.5rem);
+    max-width: none;
+    margin-inline: -1.25rem;
+    border-radius: 0;
+  }
+}
+
+/* ── Tables (if ever produced) ──────────────────────── */
+.prose-sara table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9em;
+}
+.prose-sara th,
+.prose-sara td {
+  padding: 0.55em 0.75em;
+  border-bottom: 1px solid var(--border);
+  text-align: start;
+}
+.prose-sara th {
+  color: var(--fg-strong);
+  font-weight: 600;
+}
+
+/* ── Alignment from Tiptap TextAlign (style="text-align: …") ── */
+.prose-sara [style*="text-align: center"],
+.prose-sara [style*="text-align:center"] {
+  text-wrap: balance;
+}
+.prose-sara [style*="text-align: justify"],
+.prose-sara [style*="text-align:justify"] {
+  text-wrap: wrap;
+}
+
+/* ── Editor colors & highlights inside articles (base styles live in globals.css) ── */
+.prose-sara mark,
+.prose-sara mark[data-highlight] {
+  padding: 0.04em 0.18em;
+}
+.prose-sara span[data-color] a,
+.prose-sara a span[data-color] {
+  color: inherit;
+}
+
+/* ─────────────────────────────────────────────────────────────
+ *  Site motion & small shared effects (public site)
+ *  All animations are opt-in via `motion-safe:` utilities, and the
+ *  global reduced-motion rule in globals.css neutralises the rest.
+ * ───────────────────────────────────────────────────────────── */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes theme-icon {
+  from {
+    opacity: 0;
+    transform: rotate(-60deg) scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Reading progress: CSS scroll-driven animation; hidden where unsupported. */
+.reading-progress {
+  display: none;
+}
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reading-progress {
+      display: block;
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 60;
+      height: 2px;
+      background: var(--accent);
+      transform-origin: 0 50%;
+      transform: scaleX(0);
+      animation: reading-progress linear both;
+      animation-timeline: scroll(root block);
+    }
+  }
+}
+@keyframes reading-progress {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* Search term highlight */
+mark.search-hit {
+  background: var(--selection);
+  color: var(--fg-strong);
+  border-radius: 0.2em;
+  padding: 0 0.1em;
+}
+
+/*
+ * Same measure as the .prose-sara content column, for article header/footer blocks rendered at the
+ * base 1rem font (66ch of the article's 1.0625rem / 1.1875rem body text), so all edges line up.
+ */
+.article-measure {
+  /* content-box: side padding sits outside the measure, exactly like the .prose-sara container */
+  box-sizing: content-box;
+  max-width: calc(66ch * 1.0625);
+  margin-inline: auto;
+}
+@media (min-width: 768px) {
+  .article-measure {
+    max-width: calc(66ch * 1.1875);
+  }
+}

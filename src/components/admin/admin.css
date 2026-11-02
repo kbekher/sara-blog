@@ -1,0 +1,335 @@
+/*
+ * Admin UI primitives (buttons, inputs, dialogs, toasts). Plain CSS on top of the design tokens in globals.css.
+ * Imported once by src/app/admin/layout.tsx.
+ */
+
+.admin-scroll-lock {
+  overflow: hidden;
+}
+
+/* ── Buttons ─────────────────────────────────────────── */
+.admin-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.5rem;
+  padding: 0 1rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background-color 0.2s var(--ease-apple),
+    border-color 0.2s var(--ease-apple),
+    color 0.2s var(--ease-apple),
+    opacity 0.2s var(--ease-apple),
+    transform 0.2s var(--ease-apple);
+}
+.admin-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.admin-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.admin-btn-primary {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+.admin-btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+.admin-btn-secondary {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--fg);
+}
+.admin-btn-secondary:hover:not(:disabled) {
+  background: var(--surface-hover);
+  border-color: var(--border-strong);
+}
+.admin-btn-ghost {
+  background: transparent;
+  color: var(--fg-muted);
+}
+.admin-btn-ghost:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--fg);
+}
+.admin-btn-danger {
+  background: color-mix(in srgb, var(--tc-red) 16%, transparent);
+  border-color: color-mix(in srgb, var(--tc-red) 35%, transparent);
+  color: var(--tc-red);
+}
+.admin-btn-danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--tc-red) 24%, transparent);
+}
+.admin-btn-sm {
+  min-height: 2rem;
+  padding: 0 0.75rem;
+  font-size: 0.875rem;
+}
+.admin-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  border-radius: 0.625rem;
+  color: var(--fg-muted);
+  transition:
+    background-color 0.15s var(--ease-apple),
+    color 0.15s var(--ease-apple);
+}
+.admin-icon-btn:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--fg-strong);
+}
+.admin-icon-btn[aria-pressed="true"],
+.admin-icon-btn[data-active="true"] {
+  background: var(--surface-hover);
+  color: var(--accent);
+}
+.admin-icon-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ── Inputs (16px+ to avoid iOS zoom) ───────────────── */
+.admin-input {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.875rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--bg-sunken);
+  color: var(--fg);
+  font-size: 1rem;
+  line-height: 1.4;
+  transition:
+    border-color 0.2s var(--ease-apple),
+    box-shadow 0.2s var(--ease-apple);
+}
+.admin-input::placeholder {
+  color: var(--fg-subtle);
+}
+.admin-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.admin-input[aria-invalid="true"] {
+  border-color: var(--tc-red);
+}
+textarea.admin-input {
+  resize: vertical;
+}
+.admin-label {
+  display: block;
+  margin-bottom: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--fg-muted);
+}
+.admin-hint {
+  margin-top: 0.375rem;
+  font-size: 0.8125rem;
+  color: var(--fg-subtle);
+}
+
+/* Toggle switch (use on <button role="switch" aria-checked>) */
+.admin-switch {
+  position: relative;
+  display: inline-flex;
+  width: 2.75rem;
+  height: 1.625rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--border-strong);
+  transition: background-color 0.2s var(--ease-apple);
+}
+.admin-switch::after {
+  content: "";
+  position: absolute;
+  top: 0.1875rem;
+  left: 0.1875rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 999px;
+  background: var(--fg-strong);
+  transition: transform 0.25s var(--ease-out-expo);
+}
+.admin-switch[aria-checked="true"] {
+  background: var(--accent);
+}
+.admin-switch[aria-checked="true"]::after {
+  transform: translateX(1.125rem);
+  background: var(--accent-fg);
+}
+
+/* Badges */
+.admin-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--fg-muted);
+  white-space: nowrap;
+}
+.admin-badge[data-tone="green"] {
+  color: var(--tc-green);
+  border-color: color-mix(in srgb, var(--tc-green) 35%, transparent);
+  background: color-mix(in srgb, var(--tc-green) 10%, transparent);
+}
+.admin-badge[data-tone="amber"] {
+  color: var(--tc-orange);
+  border-color: color-mix(in srgb, var(--tc-orange) 35%, transparent);
+  background: color-mix(in srgb, var(--tc-orange) 10%, transparent);
+}
+.admin-badge[data-tone="blue"] {
+  color: var(--tc-blue);
+  border-color: color-mix(in srgb, var(--tc-blue) 35%, transparent);
+  background: color-mix(in srgb, var(--tc-blue) 10%, transparent);
+}
+.admin-badge[data-tone="red"] {
+  color: var(--tc-red);
+  border-color: color-mix(in srgb, var(--tc-red) 35%, transparent);
+  background: color-mix(in srgb, var(--tc-red) 10%, transparent);
+}
+
+/* ── Dialog / sheet ──────────────────────────────────── */
+.admin-dialog {
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-elevated);
+  color: var(--fg);
+  box-shadow: var(--shadow-lg);
+  overscroll-behavior: contain;
+}
+.admin-dialog::backdrop {
+  background: rgb(0 0 0 / 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.admin-modal {
+  width: calc(100% - 2rem);
+  max-height: min(88dvh, 56rem);
+  border-radius: 1.25rem;
+}
+.admin-modal[open] {
+  animation: admin-pop 0.32s var(--ease-out-expo);
+}
+.admin-modal[open]::backdrop {
+  animation: admin-fade 0.3s var(--ease-apple);
+}
+.admin-sheet {
+  margin: 0 0 0 auto;
+  width: min(30rem, 100%);
+  max-width: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
+  border-radius: 1.25rem 0 0 1.25rem;
+  border-right: 0;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.admin-sheet > div {
+  height: 100%;
+}
+.admin-sheet[open] {
+  animation: admin-slide 0.42s var(--ease-out-expo);
+}
+@media (max-width: 640px) {
+  .admin-modal {
+    width: 100%;
+    max-width: 100%;
+    max-height: 92dvh;
+    margin: auto 0 0;
+    border-radius: 1.25rem 1.25rem 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .admin-modal[open] {
+    animation: admin-rise 0.38s var(--ease-out-expo);
+  }
+  .admin-sheet {
+    border-radius: 0;
+  }
+}
+@keyframes admin-pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+@keyframes admin-rise {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+}
+@keyframes admin-slide {
+  from {
+    transform: translateX(40px);
+    opacity: 0;
+  }
+}
+@keyframes admin-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ── Toasts ──────────────────────────────────────────── */
+.admin-toast {
+  animation: admin-toast-in 0.4s var(--ease-out-expo);
+}
+.admin-toast-leave {
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity 0.2s var(--ease-apple),
+    transform 0.2s var(--ease-apple);
+}
+@keyframes admin-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+}
+
+/* Skeleton shimmer */
+.admin-skeleton {
+  background: linear-gradient(90deg, var(--surface) 0%, var(--surface-hover) 50%, var(--surface) 100%);
+  background-size: 200% 100%;
+  animation: admin-shimmer 1.6s ease-in-out infinite;
+  border-radius: 0.5rem;
+}
+@keyframes admin-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* Horizontal scrollers without visible scrollbars (mobile toolbars, tabs) */
+.admin-scroll-x {
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.admin-scroll-x::-webkit-scrollbar {
+  display: none;
+}

@@ -6,8 +6,14 @@
  *  - `jsonToHtml(doc)`  : Tiptap JSON → sanitized HTML (uses @tiptap/html + sanitizeHtml)
  *  - `htmlToJson(html)` : HTML → Tiptap JSON (used after DeepL translates HTML)
  *  - `sanitizeHtml(html)`: allow-list sanitizer matching exactly what the editor can produce
- *  - `renderContent(doc)`: { json, html, plainText, readingMinutes }
- *  - `emptyDoc()`
+ *  - `renderContent(doc, locale?)`: { json, html, plainText, readingMinutes }
+ *  - `extractPlainText(doc)`, `emptyDoc()`
+ *  - typography helpers (`typographText`, …) — pure string functions
+ *
+ * Client components should import from "@/lib/content/extensions", "@/lib/content/types" or
+ * "@/lib/content/typography" directly to avoid pulling sanitize-html into the browser bundle.
  */
 export * from "./types";
+export * from "./extensions";
 export * from "./pipeline";
+export * from "./typography";
