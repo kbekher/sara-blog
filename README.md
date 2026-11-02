@@ -87,6 +87,7 @@ npm run db:studio     # browse data
 
 1. Push the repo to GitHub and **Import** it at [vercel.com/new](https://vercel.com/new) (framework: Next.js — detected automatically).
 2. In the project: **Storage → Create → Neon Postgres** and **Storage → Create → Blob**; connect both to all environments. This injects `DATABASE_URL` and `BLOB_READ_WRITE_TOKEN`.
+   For Neon pick the **Free** plan, region **Frankfurt (aws-eu-central-1)**, and leave **Auth** and **Realtime** off (the blog has its own admin login). Server functions are pinned to `fra1` (Frankfurt) in `vercel.json` so they sit next to the database — if you choose another DB region, change `regions` there to match.
 3. **Settings → Environment Variables**: add `NEXT_PUBLIC_SITE_URL`, `ADMIN_EMAIL`, `ADMIN_PASSWORD_HASH`, `SESSION_SECRET`, and the optional service keys (Unsplash, DeepL, Brevo, LanguageTool).
 4. **Deploy.** The build runs migrations, then `next build`. Optionally seed once from your machine: `npx vercel env pull .env.local && npm run db:seed`.
 5. Add your domain under **Settings → Domains**, update `NEXT_PUBLIC_SITE_URL`, redeploy.
