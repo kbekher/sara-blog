@@ -2,8 +2,9 @@ import "server-only";
 import { neon, neonConfig } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import * as schema from "./schema";
+import { getDatabaseUrl } from "./url";
 
-const url = process.env.DATABASE_URL;
+const url = getDatabaseUrl();
 
 // Local development/testing only: point the HTTP driver at a local Neon-compatible endpoint
 // (e.g. local-neon-http-proxy). Never set this in production.
@@ -14,7 +15,7 @@ if (process.env.NEON_FETCH_ENDPOINT) neonConfig.fetchEndpoint = process.env.NEON
  * Throws lazily so builds without DATABASE_URL still succeed for pages that don't hit the DB.
  */
 function createDb() {
-  if (!url) throw new Error("DATABASE_URL is not set. See .env.example.");
+  if (!url) throw new Error("DATABASE_URL is not set (no Postgres connection string found). See .env.example.");
   return drizzle(neon(url), { schema });
 }
 

@@ -11,12 +11,19 @@ import "./load-env";
 import { neon, neonConfig } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import { migrate } from "drizzle-orm/neon-http/migrator";
+import { databaseEnvNames, getDatabaseUrl } from "../src/db/url";
 
 async function main() {
-  const url = process.env.DATABASE_URL;
+  const url = getDatabaseUrl();
   if (!url) {
     if (process.env.VERCEL_ENV === "production") {
-      console.error("✖ DATABASE_URL is not set — connect a Neon database (Vercel → Storage) and redeploy.");
+      const seen = databaseEnvNames();
+      console.error("✖ DATABASE_URL is not set — connect a Neon database (Vercel → Storage) to the Production environment and redeploy.");
+      console.error(
+        seen.length
+          ? `  Database-related variables visible to this build (names only): ${seen.join(", ")}`
+          : "  No database-related environment variables are visible to this build.",
+      );
       process.exit(1);
     }
     console.warn("⚠ DATABASE_URL is not set — skipping database migrations.");
