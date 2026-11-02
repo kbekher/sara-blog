@@ -1,5 +1,5 @@
 /**
- * Tiptap extension set shared by the admin editor, the server-side renderer and the machine-translation round-trip.
+ * Tiptap extension set shared by the admin editor and the server-side renderer.
  *
  * Server-safe: no React, no DOM access at import time. The editor (client) adds UI-only extensions on top
  * (placeholder, LanguageTool decorations, smart typography input rules, image node view, …) — those never
@@ -13,7 +13,6 @@ import StarterKit from "@tiptap/starter-kit";
 import Image, { type ImageOptions } from "@tiptap/extension-image";
 import Highlight from "@tiptap/extension-highlight";
 import TextAlign from "@tiptap/extension-text-align";
-import type { Locale } from "@/lib/i18n/config";
 import { TEXT_COLORS, type TextColor } from "./types";
 
 export const TEXT_ALIGNMENTS = ["left", "center", "right", "justify"] as const;
@@ -146,15 +145,14 @@ export function canonicalUnsplashProfileUrl(value: unknown): string | null {
   return isUnsplashProfileUrl(url) ? url : null;
 }
 
-/** Localized wording around the two links: "{before}<a>Name</a>{middle}<a>Unsplash</a>{after}" (same as the cover). */
+/** Wording around the two links: "{before}<a>Name</a>{middle}<a>Unsplash</a>{after}" (same as the cover). */
 export type PhotoCreditLabel = { before: string; middle: string; after: string };
-export const PHOTO_CREDIT_LABELS: Record<Locale, PhotoCreditLabel> = {
-  ru: { before: "Фото: ", middle: " на ", after: "" },
-  uk: { before: "Фото: ", middle: " на ", after: "" },
-  en: { before: "Photo by ", middle: " on ", after: "" },
-};
+export const PHOTO_CREDIT_LABEL: PhotoCreditLabel = { before: "Фото: ", middle: " на ", after: "" };
 
-/** Class of the generated (never user-edited, never translated) credit line inside <figcaption>. */
+/**
+ * Class of the generated (never user-edited) credit line inside <figcaption>. It is ordinary text, so browser
+ * translation translates "Фото: … на …" like the rest of the page.
+ */
 export const PHOTO_CREDIT_CLASS = "photo-credit";
 
 /** The <img> carrying the attributes: the element itself, or the first img inside a <figure>. */
@@ -197,18 +195,18 @@ function captionOf(element: HTMLElement): string | null {
 }
 
 type FigureImageOptions = ImageOptions & {
-  /** Wording of the credit line; set per locale by the server renderer. */
+  /** Wording of the credit line. */
   creditLabel: PhotoCreditLabel;
 };
 
 /**
  * Block image rendered as `<figure><img …><figcaption>…</figcaption></figure>`.
- * Parses both bare `<img>` and `<figure>` (the translator translates the figcaption text; alt stays as authored).
+ * Parses both bare `<img>` and `<figure>` (e.g. pasted HTML).
  *
  * Stock photos carry a structured credit (`source`, `creditName`, `creditUrl`) stored as data-* attributes on
- * the <figure>. The visible credit line (`<span class="photo-credit" translate="no">Фото: <a>Name</a> на
- * <a>Unsplash</a></span>`) is always regenerated from those attributes and ignored when parsing the caption,
- * so a translation round-trip can never alter or duplicate it.
+ * the <figure>. The visible credit line (`<span class="photo-credit">Фото: <a>Name</a> на <a>Unsplash</a></span>`)
+ * is always regenerated from those attributes and ignored when parsing the caption, so an HTML round-trip
+ * (copy & paste) can never alter or duplicate it.
  */
 export const FigureImage = Image.extend<FigureImageOptions>({
   draggable: true,
@@ -216,7 +214,7 @@ export const FigureImage = Image.extend<FigureImageOptions>({
   addOptions() {
     return {
       ...(this.parent?.() as ImageOptions),
-      creditLabel: PHOTO_CREDIT_LABELS.ru,
+      creditLabel: PHOTO_CREDIT_LABEL,
     };
   },
 
@@ -312,7 +310,7 @@ export const FigureImage = Image.extend<FigureImageOptions>({
       if (middle) credit.push(middle);
       credit.push(["a", { href: withUnsplashUtm(UNSPLASH_HOME) }, "Unsplash"]);
       if (after) credit.push(after);
-      captionParts.push(["span", { class: PHOTO_CREDIT_CLASS, translate: "no" }, ...credit]);
+      captionParts.push(["span", { class: PHOTO_CREDIT_CLASS }, ...credit]);
     }
 
     return captionParts.length
@@ -324,10 +322,10 @@ export const FigureImage = Image.extend<FigureImageOptions>({
 /* ───────────────────────── Extension list ───────────────────────── */
 
 /**
- * The schema-defining extension list. Server-safe. `locale` only selects the wording of photo credits.
+ * The schema-defining extension list. Server-safe.
  * The editor appends UI-only extensions; it must never remove or rename anything here.
  */
-export function getExtensions(locale: Locale = "ru"): AnyExtension[] {
+export function getExtensions(): AnyExtension[] {
   return [
     StarterKit.configure({
       heading: { levels: [...HEADING_LEVELS] },
@@ -343,8 +341,7 @@ export function getExtensions(locale: Locale = "ru"): AnyExtension[] {
       // Visual-only helpers; harmless on the server.
       dropcursor: { color: false, width: 2, class: "editor-dropcursor" },
     }),
-    // Only the credit wording differs per locale; the schema is identical.
-    FigureImage.configure({ creditLabel: PHOTO_CREDIT_LABELS[locale] }),
+    FigureImage,
     TextColorMark,
     NamedHighlight,
     TextAlign.configure({ types: ["heading", "paragraph"], alignments: [...TEXT_ALIGNMENTS] }),

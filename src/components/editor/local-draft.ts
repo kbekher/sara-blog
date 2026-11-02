@@ -4,18 +4,19 @@
  */
 import type { JSONContent } from "@tiptap/core";
 import type { CoverImage } from "@/db/schema";
-import type { Locale } from "@/lib/i18n/config";
 
 export type LocalDraftData = {
   slug: string;
   cover: CoverImage | null;
   featured: boolean;
   tagNames: string[];
-  drafts: Partial<Record<Locale, { title: string; excerpt: string; contentJson: JSONContent }>>;
-  edited: Locale[];
+  draft: { title: string; excerpt: string; contentJson: JSONContent };
 };
 
 export type LocalDraft = { savedAt: string; data: LocalDraftData };
+
+/** Backups written while the editor still had language tabs: `{ drafts: { ru: {…}, uk: {…} }, edited }`. */
+type LegacyDraftData = Omit<LocalDraftData, "draft"> & { drafts?: { ru?: LocalDraftData["draft"] } };
 
 const PREFIX = "sara-editor:draft:";
 
@@ -27,9 +28,15 @@ export function readLocalDraft(postId: string | null): LocalDraft | null {
   try {
     const raw = localStorage.getItem(draftKey(postId));
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as LocalDraft;
-    if (!parsed || typeof parsed.savedAt !== "string" || !parsed.data?.drafts) return null;
-    return parsed;
+    const parsed = JSON.parse(raw) as { savedAt?: unknown; data?: Partial<LocalDraftData> & LegacyDraftData };
+    if (!parsed || typeof parsed.savedAt !== "string" || !parsed.data) return null;
+    const { drafts, ...rest } = parsed.data;
+    const draft = parsed.data.draft ?? drafts?.ru;
+    if (!draft) return null;
+    return {
+      savedAt: parsed.savedAt,
+      data: { slug: rest.slug ?? "", cover: rest.cover ?? null, featured: !!rest.featured, tagNames: rest.tagNames ?? [], draft },
+    };
   } catch {
     return null;
   }

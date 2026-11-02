@@ -26,7 +26,7 @@ export type OgFont = { name: string; data: ArrayBuffer; weight: 400 | 600; style
 /** Loads the serif in the weights used by the OG templates; returns [] if Google Fonts is unreachable. */
 export async function loadOgFonts(text: string): Promise<OgFont[]> {
   // Deduplicate characters to keep the subset (and the cache key) small.
-  const glyphs = Array.from(new Set(Array.from(`${text}${Object.values(site.name).join("")}·—0123456789`))).sort().join("");
+  const glyphs = Array.from(new Set(Array.from(`${text}${site.name}·—0123456789`))).sort().join("");
   try {
     const [regular, semibold] = await Promise.all([fetchSerifFont(400, glyphs), fetchSerifFont(600, glyphs)]);
     return [

@@ -1,5 +1,6 @@
 /**
- * Russian UI strings — the primary dictionary. Its shape is the `Dictionary` type that uk/en must satisfy.
+ * Russian UI strings — the site's only dictionary (readers use their browser's page translation for other languages).
+ * Every string here is rendered as real DOM text, so browser translators can pick it up.
  *
  * Conventions:
  *  - `{name}` placeholders are filled with `fmt()` from `../get-dictionary`.
@@ -7,11 +8,8 @@
  *  - Values must stay plain strings (no functions) so slices of the dictionary can be passed to Client Components.
  */
 
-/** Intl.PluralRules categories. Russian & Ukrainian use one/few/many; English only one/other. */
+/** Intl.PluralRules categories (Russian uses one/few/many; `other` covers fractions). */
 export type PluralForms = { one: string; few?: string; many?: string; other: string };
-
-/** A link-bearing sentence split into parts: `${before}<link>${link}</link>${after}`. */
-export type LinkedText = { before: string; link: string; after: string };
 
 const ru = {
   meta: {
@@ -23,7 +21,7 @@ const ru = {
     searchTitle: "Поиск",
     searchDescription: "Поиск по всем записям блога.",
     pageTitle: "Страница {page}",
-    rssTitle: "{site} — RSS (русский)",
+    rssTitle: "{site} — RSS",
   },
   a11y: {
     skipToContent: "Перейти к содержанию",
@@ -46,10 +44,6 @@ const ru = {
     light: "Светлая",
     system: "Как в системе",
     current: "Тема: {theme}. Нажмите, чтобы переключить",
-  },
-  language: {
-    label: "Язык",
-    switchTo: "Читать на языке: {language}",
   },
   home: {
     eyebrow: "Личный блог",
@@ -75,17 +69,6 @@ const ru = {
     } as PluralForms,
     publishedOn: "Опубликовано",
     updatedOn: "Обновлено {date}",
-    machineTranslated: {
-      ru: "Переведено автоматически с русского",
-      uk: "Переведено автоматически с украинского",
-      en: "Переведено автоматически с английского",
-    },
-    readOriginal: "Читать оригинал",
-    notTranslated: {
-      before: "Эта запись ещё не переведена на русский, поэтому здесь показан оригинал. ",
-      link: "Открыть оригинальную страницу",
-      after: "",
-    } as LinkedText,
     photoCredit: { before: "Фото: ", middle: " на ", after: "" },
     tags: "Темы",
     share: "Поделиться",
@@ -145,7 +128,6 @@ const ru = {
   },
   footer: {
     rss: "RSS",
-    languages: "Языки",
     rights: "Все права защищены.",
     subscribe: "Подписка",
   },

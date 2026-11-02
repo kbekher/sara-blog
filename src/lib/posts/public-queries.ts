@@ -3,7 +3,7 @@ import { cacheLife, cacheTag } from "next/cache";
 import { and, asc, count, desc, eq, gt, ilike, inArray, lt, lte, ne, or, sql, type SQL } from "drizzle-orm";
 import { db, hasDatabase } from "@/db";
 import { posts, postTags, postTranslations, tags, type CoverImage } from "@/db/schema";
-import type { Locale } from "@/lib/i18n/config";
+import { siteLocale } from "@/lib/i18n/config";
 
 /**
  * Cached, read-only queries for the public site.
@@ -16,6 +16,9 @@ import type { Locale } from "@/lib/i18n/config";
  *
  * Every query returns an empty result when DATABASE_URL is not configured (`hasDatabase === false`),
  * so builds and previews without a database still render (empty states).
+ *
+ * The site is Russian-only: posts are read from their `siteLocale` ("ru") row in `post_translations` (the table
+ * name is historical — it simply holds each post's text). Tag names come from the `ru` key of `tags.names`.
  */
 
 export const POSTS_TAG = "posts";
@@ -42,18 +45,11 @@ export type PostSummary = {
   featured: boolean;
   publishedAt: Date;
   readingMinutes: number;
-  /** Locale of the translation actually returned. */
-  locale: Locale;
-  /** The post's authoring locale. */
-  sourceLocale: Locale;
-  /** true when the requested locale had no translation and the source-locale text is returned instead. */
-  isFallback: boolean;
   tags: TagRef[];
 };
 
 export type PostDetail = PostSummary & {
   contentHtml: string;
-  isMachineTranslated: boolean;
   updatedAt: Date;
 };
 
@@ -80,7 +76,6 @@ function isLive(): SQL {
 const postColumns = {
   id: posts.id,
   slug: posts.slug,
-  sourceLocale: posts.sourceLocale,
   cover: posts.cover,
   featured: posts.featured,
   publishedAt: posts.publishedAt,
@@ -90,7 +85,6 @@ const postColumns = {
 type PostRow = {
   id: string;
   slug: string;
-  sourceLocale: Locale;
   cover: CoverImage | null;
   featured: boolean;
   publishedAt: Date | null;
@@ -98,31 +92,16 @@ type PostRow = {
   updatedAt: Date;
 };
 
-type TranslationRow = {
+type TextRow = {
   postId: string;
-  locale: Locale;
   title: string;
   excerpt: string;
   readingMinutes: number;
-  isMachineTranslated: boolean;
   updatedAt: Date;
   contentHtml?: string;
 };
 
-/** A translation is usable only once it has a title (machine translation may still be pending). */
-function pickTranslation(
-  rows: TranslationRow[],
-  locale: Locale,
-  sourceLocale: Locale,
-): { row: TranslationRow; isFallback: boolean } | null {
-  const usable = rows.filter((r) => r.title.trim() !== "");
-  const own = usable.find((r) => r.locale === locale);
-  if (own) return { row: own, isFallback: false };
-  const source = usable.find((r) => r.locale === sourceLocale) ?? usable[0];
-  return source ? { row: source, isFallback: true } : null;
-}
-
-async function loadTags(postIds: string[], locale: Locale): Promise<Map<string, TagRef[]>> {
+async function loadTags(postIds: string[]): Promise<Map<string, TagRef[]>> {
   const map = new Map<string, TagRef[]>();
   if (postIds.length === 0) return map;
   const rows = await db
@@ -133,58 +112,57 @@ async function loadTags(postIds: string[], locale: Locale): Promise<Map<string, 
     .orderBy(asc(tags.slug));
   for (const r of rows) {
     const list = map.get(r.postId) ?? [];
-    list.push({ slug: r.slug, name: tagName(r.names, locale, r.slug) });
+    list.push({ slug: r.slug, name: tagName(r.names, r.slug) });
     map.set(r.postId, list);
   }
   return map;
 }
 
-function tagName(names: { ru: string; uk: string; en: string } | null, locale: Locale, slug: string): string {
-  return names?.[locale]?.trim() || names?.ru?.trim() || slug;
+/** The tag's Russian display name (older rows may also carry uk/en names, which are ignored). */
+function tagName(names: { ru: string } | null, slug: string): string {
+  return names?.ru?.trim() || slug;
 }
 
 /**
- * Attaches the best translation and tags to post rows, preserving the input order.
- * Posts without any usable translation are dropped.
+ * Attaches the post text (the `siteLocale` row) and tags to post rows, preserving the input order.
+ * Posts without a titled text row are dropped.
  */
-async function hydrate(rows: PostRow[], locale: Locale): Promise<PostSummary[]>;
-async function hydrate(rows: PostRow[], locale: Locale, withContent: true): Promise<PostDetail[]>;
-async function hydrate(rows: PostRow[], locale: Locale, withContent = false): Promise<PostSummary[] | PostDetail[]> {
+async function hydrate(rows: PostRow[]): Promise<PostSummary[]>;
+async function hydrate(rows: PostRow[], withContent: true): Promise<PostDetail[]>;
+async function hydrate(rows: PostRow[], withContent = false): Promise<PostSummary[] | PostDetail[]> {
   if (rows.length === 0) return [];
   const ids = rows.map((r) => r.id);
-  const wantedLocales = Array.from(new Set<Locale>([locale, ...rows.map((r) => r.sourceLocale)]));
 
-  const [translations, tagMap] = await Promise.all([
+  const [texts, tagMap] = await Promise.all([
     db
       .select({
         postId: postTranslations.postId,
-        locale: postTranslations.locale,
         title: postTranslations.title,
         excerpt: postTranslations.excerpt,
         readingMinutes: postTranslations.readingMinutes,
-        isMachineTranslated: postTranslations.isMachineTranslated,
         updatedAt: postTranslations.updatedAt,
         // Only fetch the (large) HTML body when the caller renders it.
         ...(withContent ? { contentHtml: postTranslations.contentHtml } : {}),
       })
       .from(postTranslations)
-      .where(and(inArray(postTranslations.postId, ids), inArray(postTranslations.locale, wantedLocales))),
-    loadTags(ids, locale),
+      .where(
+        and(
+          inArray(postTranslations.postId, ids),
+          eq(postTranslations.locale, siteLocale),
+          ne(postTranslations.title, ""),
+        ),
+      ),
+    loadTags(ids),
   ]);
 
-  const byPost = new Map<string, TranslationRow[]>();
-  for (const t of translations as TranslationRow[]) {
-    const list = byPost.get(t.postId) ?? [];
-    list.push(t);
-    byPost.set(t.postId, list);
-  }
+  const byPost = new Map<string, TextRow>();
+  for (const t of texts as TextRow[]) byPost.set(t.postId, t);
 
   const summaries: PostSummary[] = [];
   const details: PostDetail[] = [];
   for (const p of rows) {
-    const picked = pickTranslation(byPost.get(p.id) ?? [], locale, p.sourceLocale);
-    if (!picked) continue;
-    const { row, isFallback } = picked;
+    const row = byPost.get(p.id);
+    if (!row || !row.title.trim()) continue;
     const summary: PostSummary = {
       id: p.id,
       slug: p.slug,
@@ -194,17 +172,13 @@ async function hydrate(rows: PostRow[], locale: Locale, withContent = false): Pr
       featured: p.featured,
       publishedAt: p.publishedAt ?? p.createdAt,
       readingMinutes: Math.max(1, row.readingMinutes),
-      locale: row.locale,
-      sourceLocale: p.sourceLocale,
-      isFallback,
       tags: tagMap.get(p.id) ?? [],
     };
     // Detail-only fields stay out of summaries so cached list payloads remain small.
     if (withContent) {
       details.push({
         ...summary,
-        contentHtml: row.contentHtml ?? "",
-        isMachineTranslated: row.isMachineTranslated,
+        contentHtml: allowBrowserTranslation(row.contentHtml ?? ""),
         updatedAt: row.updatedAt > p.updatedAt ? row.updatedAt : p.updatedAt,
       });
     } else {
@@ -212,6 +186,15 @@ async function hydrate(rows: PostRow[], locale: Locale, withContent = false): Pr
     }
   }
   return withContent ? details : summaries;
+}
+
+/**
+ * Posts saved before the site went Russian-only carry `translate="no"` on the generated photo-credit line
+ * (`<span class="photo-credit" translate="no">`). The site now relies on browser translation, so that opt-out is
+ * dropped at read time (new saves no longer produce it; no data migration needed).
+ */
+function allowBrowserTranslation(html: string): string {
+  return html.replace(/\s+translate="no"/g, "");
 }
 
 function toPositiveInt(value: number | undefined, fallback: number, max = Number.MAX_SAFE_INTEGER): number {
@@ -223,7 +206,6 @@ function toPositiveInt(value: number | undefined, fallback: number, max = Number
 
 /** Paginated live posts, newest first. `excludeSlug` removes e.g. the home hero post from the list. */
 export async function getPublishedPosts(
-  locale: Locale,
   options: { page?: number; pageSize?: number; excludeSlug?: string } = {},
 ): Promise<PostPage> {
   "use cache";
@@ -248,7 +230,7 @@ export async function getPublishedPosts(
   ]);
 
   return {
-    posts: await hydrate(rows, locale),
+    posts: await hydrate(rows),
     total,
     page,
     pageSize,
@@ -257,7 +239,7 @@ export async function getPublishedPosts(
 }
 
 /** The home hero: the most recent post marked `featured`, otherwise the latest post. */
-export async function getFeaturedPost(locale: Locale): Promise<PostSummary | null> {
+export async function getFeaturedPost(): Promise<PostSummary | null> {
   "use cache";
   cacheLife(PUBLIC_CACHE_LIFE);
   cacheTag(POSTS_TAG);
@@ -269,15 +251,12 @@ export async function getFeaturedPost(locale: Locale): Promise<PostSummary | nul
     .where(isLive())
     .orderBy(desc(posts.featured), desc(posts.publishedAt), desc(posts.createdAt))
     .limit(1);
-  const [post] = await hydrate(rows, locale);
+  const [post] = await hydrate(rows);
   return post ?? null;
 }
 
-/**
- * A single live post with its body. If the requested locale has no usable translation, the source-locale
- * translation is returned with `isFallback: true`. Drafts and scheduled posts resolve to `null` (→ 404).
- */
-export async function getPostBySlug(locale: Locale, slug: string): Promise<PostDetail | null> {
+/** A single live post with its body. Drafts and scheduled posts resolve to `null` (→ 404). */
+export async function getPostBySlug(slug: string): Promise<PostDetail | null> {
   "use cache";
   cacheLife(PUBLIC_CACHE_LIFE);
   cacheTag(POSTS_TAG, postTag(slug));
@@ -288,13 +267,12 @@ export async function getPostBySlug(locale: Locale, slug: string): Promise<PostD
     .from(posts)
     .where(and(isLive(), eq(posts.slug, slug)))
     .limit(1);
-  const [post] = await hydrate(rows, locale, true);
+  const [post] = await hydrate(rows, true);
   return post ?? null;
 }
 
 /** Chronological neighbours of a post: `newer` was published after it, `older` before it. */
 export async function getAdjacentPosts(
-  locale: Locale,
   slug: string,
 ): Promise<{ newer: PostSummary | null; older: PostSummary | null }> {
   "use cache";
@@ -324,12 +302,12 @@ export async function getAdjacentPosts(
       .orderBy(desc(posts.publishedAt))
       .limit(1),
   ]);
-  const [newer, older] = await Promise.all([hydrate(newerRows, locale), hydrate(olderRows, locale)]);
+  const [newer, older] = await Promise.all([hydrate(newerRows), hydrate(olderRows)]);
   return { newer: newer[0] ?? null, older: older[0] ?? null };
 }
 
-/** Tags that have at least one live post, with counts, most-used first. Names in the requested locale. */
-export async function getAllTags(locale: Locale): Promise<TagWithCount[]> {
+/** Tags that have at least one live post, with counts, most-used first. */
+export async function getAllTags(): Promise<TagWithCount[]> {
   "use cache";
   cacheLife(PUBLIC_CACHE_LIFE);
   cacheTag(POSTS_TAG);
@@ -344,13 +322,12 @@ export async function getAllTags(locale: Locale): Promise<TagWithCount[]> {
     .groupBy(tags.id, tags.slug, tags.names);
 
   return rows
-    .map((r) => ({ slug: r.slug, name: tagName(r.names, locale, r.slug), count: r.count }))
-    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, locale));
+    .map((r) => ({ slug: r.slug, name: tagName(r.names, r.slug), count: r.count }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, siteLocale));
 }
 
-/** A tag (name in locale) and its live posts, newest first; `null` if the tag doesn't exist. */
+/** A tag and its live posts, newest first; `null` if the tag doesn't exist. */
 export async function getPostsByTag(
-  locale: Locale,
   tagSlug: string,
 ): Promise<{ tag: TagRef; posts: PostSummary[] } | null> {
   "use cache";
@@ -373,8 +350,8 @@ export async function getPostsByTag(
     .orderBy(desc(posts.publishedAt), desc(posts.createdAt));
 
   return {
-    tag: { slug: tag.slug, name: tagName(tag.names, locale, tag.slug) },
-    posts: await hydrate(rows, locale),
+    tag: { slug: tag.slug, name: tagName(tag.names, tag.slug) },
+    posts: await hydrate(rows),
   };
 }
 
@@ -403,10 +380,10 @@ function makeSnippet(text: string, query: string, fallback: string): string {
 }
 
 /**
- * Case-insensitive search (ILIKE) over title, excerpt and full text of the requested locale's translations.
+ * Case-insensitive search (ILIKE) over the posts' title, excerpt and full text.
  * Only live posts. Title matches rank first, then newest first.
  */
-export async function searchPosts(locale: Locale, rawQuery: string): Promise<SearchResult[]> {
+export async function searchPosts(rawQuery: string): Promise<SearchResult[]> {
   "use cache";
   cacheLife(PUBLIC_CACHE_LIFE);
   cacheTag(POSTS_TAG);
@@ -428,7 +405,7 @@ export async function searchPosts(locale: Locale, rawQuery: string): Promise<Sea
     .where(
       and(
         isLive(),
-        eq(postTranslations.locale, locale),
+        eq(postTranslations.locale, siteLocale),
         ne(postTranslations.title, ""),
         or(
           ilike(postTranslations.title, pattern),
@@ -440,10 +417,7 @@ export async function searchPosts(locale: Locale, rawQuery: string): Promise<Sea
     .orderBy(desc(ilike(postTranslations.title, pattern)), desc(posts.publishedAt))
     .limit(SEARCH_LIMIT);
 
-  const tagMap = await loadTags(
-    rows.map((r) => r.id),
-    locale,
-  );
+  const tagMap = await loadTags(rows.map((r) => r.id));
 
   return rows.map((r) => ({
     id: r.id,
@@ -454,9 +428,6 @@ export async function searchPosts(locale: Locale, rawQuery: string): Promise<Sea
     featured: r.featured,
     publishedAt: r.publishedAt ?? r.createdAt,
     readingMinutes: Math.max(1, r.readingMinutes),
-    locale,
-    sourceLocale: r.sourceLocale,
-    isFallback: false,
     tags: tagMap.get(r.id) ?? [],
     snippet: makeSnippet(r.plainText, query, r.excerpt),
   }));
@@ -478,7 +449,7 @@ export async function getAllPublishedSlugs(): Promise<{ slug: string; publishedA
 }
 
 /** Latest live posts with full HTML bodies — for the RSS feed. */
-export async function getFeedPosts(locale: Locale, limit = 20): Promise<PostDetail[]> {
+export async function getFeedPosts(limit = 20): Promise<PostDetail[]> {
   "use cache";
   cacheLife(PUBLIC_CACHE_LIFE);
   cacheTag(POSTS_TAG);
@@ -490,5 +461,5 @@ export async function getFeedPosts(locale: Locale, limit = 20): Promise<PostDeta
     .where(isLive())
     .orderBy(desc(posts.publishedAt), desc(posts.createdAt))
     .limit(toPositiveInt(limit, 20, 100));
-  return hydrate(rows, locale, true);
+  return hydrate(rows, true);
 }

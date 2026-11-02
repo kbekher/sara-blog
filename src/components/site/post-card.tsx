@@ -1,6 +1,5 @@
 import Link from "next/link";
 import clsx from "clsx";
-import type { Locale } from "@/lib/i18n/config";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 import type { PostSummary } from "@/lib/posts/public-queries";
 import { CoverImage } from "./cover-image";
@@ -39,12 +38,12 @@ const TEXT_CARD_GLOW =
   "bg-[radial-gradient(90%_120%_at_0%_0%,color-mix(in_oklab,var(--accent)_9%,transparent),transparent_65%)]";
 
 /** Large featured card on the home page. The whole card is one link (title is the accessible name). */
-export function HeroPostCard({ locale, dict, post }: { locale: Locale; dict: Dictionary; post: PostSummary }) {
+export function HeroPostCard({ dict, post }: { dict: Dictionary; post: PostSummary }) {
   const { cover } = post;
   return (
     <article className="group relative">
       <Link
-        href={`/${locale}/posts/${post.slug}`}
+        href={`/posts/${post.slug}`}
         className={clsx(
           "grid overflow-hidden rounded-[28px] border border-border bg-surface transition-[transform,border-color,background-color] duration-500 ease-out-expo hover:-translate-y-0.5 hover:border-border-strong hover:bg-surface-hover",
           cover ? "md:grid-cols-[1.35fr_1fr]" : TEXT_CARD_GLOW,
@@ -66,7 +65,6 @@ export function HeroPostCard({ locale, dict, post }: { locale: Locale; dict: Dic
         >
           <p className="text-xs font-medium tracking-[0.14em] text-accent uppercase">{dict.home.featured}</p>
           <h2
-            lang={post.locale}
             className={clsx(
               "font-serif font-semibold text-fg-strong text-balance",
               cover
@@ -78,8 +76,7 @@ export function HeroPostCard({ locale, dict, post }: { locale: Locale; dict: Dic
           </h2>
           {post.excerpt && (
             <p
-              lang={post.locale}
-              className={clsx(
+                className={clsx(
                 "font-serif leading-relaxed text-fg-muted italic text-pretty",
                 cover ? "text-lg" : "max-w-[48ch] text-lg sm:text-xl",
               )}
@@ -87,7 +84,7 @@ export function HeroPostCard({ locale, dict, post }: { locale: Locale; dict: Dic
               {post.excerpt}
             </p>
           )}
-          <PostMeta locale={locale} dict={dict} publishedAt={post.publishedAt} readingMinutes={post.readingMinutes} />
+          <PostMeta dict={dict} publishedAt={post.publishedAt} readingMinutes={post.readingMinutes} />
         </div>
       </Link>
     </article>
@@ -95,12 +92,12 @@ export function HeroPostCard({ locale, dict, post }: { locale: Locale; dict: Dic
 }
 
 /** Apple-like grid card: subtle lift on hover, cover zooms to 1.02. */
-export function PostCard({ locale, dict, post }: { locale: Locale; dict: Dictionary; post: PostSummary }) {
+export function PostCard({ dict, post }: { dict: Dictionary; post: PostSummary }) {
   const { cover } = post;
   return (
     <article className="group h-full">
       <Link
-        href={`/${locale}/posts/${post.slug}`}
+        href={`/posts/${post.slug}`}
         className={clsx(
           "flex h-full flex-col overflow-hidden rounded-3xl border border-border bg-surface transition-[transform,border-color,background-color] duration-500 ease-out-expo hover:-translate-y-1 hover:border-border-strong hover:bg-surface-hover",
           !cover && TEXT_CARD_GLOW,
@@ -115,15 +112,13 @@ export function PostCard({ locale, dict, post }: { locale: Locale; dict: Diction
         )}
         <div className="flex flex-1 flex-col gap-3 p-5 sm:p-6">
           <h3
-            lang={post.locale}
             className="font-serif text-[1.375rem] leading-snug font-semibold tracking-[-0.01em] text-fg-strong text-balance"
           >
             {post.title}
           </h3>
           {post.excerpt && (
             <p
-              lang={post.locale}
-              className={clsx(
+                className={clsx(
                 "text-[0.9375rem] leading-relaxed text-fg-muted text-pretty",
                 // Text-only cards have room for a longer excerpt.
                 cover ? "line-clamp-3" : "line-clamp-5",
@@ -134,7 +129,6 @@ export function PostCard({ locale, dict, post }: { locale: Locale; dict: Diction
           )}
           <PostMeta
             className="mt-auto pt-2"
-            locale={locale}
             dict={dict}
             publishedAt={post.publishedAt}
             readingMinutes={post.readingMinutes}
@@ -146,12 +140,10 @@ export function PostCard({ locale, dict, post }: { locale: Locale; dict: Diction
 }
 
 export function PostGrid({
-  locale,
   dict,
   posts,
   className,
 }: {
-  locale: Locale;
   dict: Dictionary;
   posts: PostSummary[];
   className?: string;
@@ -164,7 +156,7 @@ export function PostGrid({
           className="motion-safe:animate-[fade-up_700ms_var(--ease-out-expo)_both]"
           style={{ animationDelay: `${Math.min(i, 8) * 60}ms` }}
         >
-          <PostCard locale={locale} dict={dict} post={post} />
+          <PostCard dict={dict} post={post} />
         </li>
       ))}
     </ul>

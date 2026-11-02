@@ -1,49 +1,43 @@
-import { localeTags, type Locale } from "./config";
+import { siteLocaleTag } from "./config";
 import { site } from "@/lib/site";
 import ru, { type Dictionary, type PluralForms } from "./dictionaries/ru";
-import uk from "./dictionaries/uk";
-import en from "./dictionaries/en";
 
-export type { Dictionary, PluralForms, LinkedText } from "./dictionaries/ru";
+export type { Dictionary, PluralForms } from "./dictionaries/ru";
 
 /**
- * UI dictionaries are small, plain objects, so they're imported statically (no async loading).
- * Safe to use from Server Components; Client Components should receive only the slice they need as props.
+ * The UI dictionary (Russian only — readers use browser translation for other languages). A small, plain object,
+ * imported statically. Safe to use from Server Components; Client Components should receive only the slice they need.
  */
-const dictionaries: Record<Locale, Dictionary> = { ru, uk, en };
-
-export function getDictionary(locale: Locale): Dictionary {
-  return dictionaries[locale];
+export function getDictionary(): Dictionary {
+  return ru;
 }
 
-/** Fills `{key}` placeholders: fmt("Page {page}", { page: 2 }) → "Page 2". Unknown keys are left as-is. */
+/** Fills `{key}` placeholders: fmt("Страница {page}", { page: 2 }) → "Страница 2". Unknown keys are left as-is. */
 export function fmt(template: string, values: Record<string, string | number>): string {
   return template.replace(/\{(\w+)\}/g, (match, key: string) =>
     key in values ? String(values[key]) : match,
   );
 }
 
-const pluralRules = new Map<Locale, Intl.PluralRules>();
+const pluralRules = new Intl.PluralRules(siteLocaleTag);
+const numberFormat = new Intl.NumberFormat(siteLocaleTag);
 
 /** Picks the right plural form for `n` (Intl.PluralRules) and fills `{n}`. */
-export function plural(locale: Locale, n: number, forms: PluralForms): string {
-  let rules = pluralRules.get(locale);
-  if (!rules) {
-    rules = new Intl.PluralRules(localeTags[locale]);
-    pluralRules.set(locale, rules);
-  }
-  const category = rules.select(n) as keyof PluralForms;
+export function plural(n: number, forms: PluralForms): string {
+  const category = pluralRules.select(n) as keyof PluralForms;
   const template = forms[category] ?? forms.other;
-  return fmt(template, { n: new Intl.NumberFormat(localeTags[locale]).format(n) });
+  return fmt(template, { n: numberFormat.format(n) });
 }
 
-/** Long, human date in the locale: "2 ноября 2026 г." / "2 листопада 2026 р." / "November 2, 2026". */
-export function formatDate(locale: Locale, date: Date | string): string {
-  return new Intl.DateTimeFormat(localeTags[locale], {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    // Fixed site time zone keeps server rendering deterministic and dates correct for readers.
-    timeZone: site.timeZone,
-  }).format(typeof date === "string" ? new Date(date) : date);
+const dateFormat = new Intl.DateTimeFormat(siteLocaleTag, {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  // Fixed site time zone keeps server rendering deterministic and dates correct for readers.
+  timeZone: site.timeZone,
+});
+
+/** Long, human date: "2 ноября 2026 г.". */
+export function formatDate(date: Date | string): string {
+  return dateFormat.format(typeof date === "string" ? new Date(date) : date);
 }

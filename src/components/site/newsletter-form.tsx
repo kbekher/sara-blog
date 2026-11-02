@@ -3,7 +3,6 @@
 import { useId, useState, type FormEvent } from "react";
 import { ArrowRight, Check, LoaderCircle } from "lucide-react";
 import clsx from "clsx";
-import type { Locale } from "@/lib/i18n/config";
 import type { Dictionary } from "@/lib/i18n/get-dictionary";
 
 export type NewsletterLabels = Dictionary["newsletter"];
@@ -19,17 +18,18 @@ type ApiResponse = { ok: true; doubleOptIn: boolean } | { ok: false; error?: str
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
- * Newsletter signup. POSTs JSON `{ email, locale, company }` to /api/newsletter
+ * Newsletter signup. POSTs JSON `{ email, company }` to /api/newsletter
  * (`company` is a honeypot: humans never see or fill it). Expects `{ ok: true, doubleOptIn }`
  * or `{ ok: false, error }` with a 4xx status.
+ *
+ * Browser-translation safe: every piece of text that changes with the form state sits in its own keyed element,
+ * so React swaps elements instead of editing text nodes the translator may have replaced (see translate-guard.tsx).
  */
 export function NewsletterForm({
-  locale,
   labels,
   variant = "card",
   className,
 }: {
-  locale: Locale;
   labels: NewsletterLabels;
   variant?: "card" | "inline";
   className?: string;
@@ -57,7 +57,7 @@ export function NewsletterForm({
       const res = await fetch("/api/newsletter", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, locale, company }),
+        body: JSON.stringify({ email, company }),
       });
       const body = (await res.json().catch(() => null)) as ApiResponse | null;
       if (res.ok && body?.ok) {
@@ -101,7 +101,7 @@ export function NewsletterForm({
           </span>
           <p className="text-[0.9375rem] text-fg">
             <strong className="font-semibold text-fg-strong">{labels.successTitle}</strong>{" "}
-            {state.doubleOptIn ? labels.successConfirm : labels.success}
+            <span>{state.doubleOptIn ? labels.successConfirm : labels.success}</span>
           </p>
         </div>
       ) : (
@@ -152,11 +152,11 @@ export function NewsletterForm({
               {loading ? (
                 <>
                   <LoaderCircle aria-hidden className="size-4 animate-spin" />
-                  {labels.submitting}
+                  <span key="submitting">{labels.submitting}</span>
                 </>
               ) : (
                 <>
-                  {labels.submit}
+                  <span key="submit">{labels.submit}</span>
                   <ArrowRight
                     aria-hidden
                     className="size-4 transition-transform duration-300 ease-apple group-hover:translate-x-0.5"
@@ -171,7 +171,11 @@ export function NewsletterForm({
             aria-live="polite"
             className={clsx("mt-2.5 min-h-5 text-sm", state.status === "error" ? "text-(--tc-red)" : "text-fg-subtle")}
           >
-            {state.status === "error" ? state.message : labels.privacy}
+            {state.status === "error" ? (
+              <span key={`error:${state.message}`}>{state.message}</span>
+            ) : (
+              <span key="privacy">{labels.privacy}</span>
+            )}
           </p>
         </form>
       )}

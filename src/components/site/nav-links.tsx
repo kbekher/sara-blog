@@ -4,49 +4,36 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Search } from "lucide-react";
 import clsx from "clsx";
-import type { Locale } from "@/lib/i18n/config";
 
 export type NavLabels = { home: string; tags: string; search: string };
 
-type Item = { key: keyof NavLabels; href: string; match: (rest: string) => boolean };
+type Item = { key: keyof NavLabels; href: string; match: (pathname: string) => boolean };
 
-function items(locale: Locale): Item[] {
-  return [
-    { key: "home", href: `/${locale}`, match: (rest) => rest === "" || rest.startsWith("/posts") },
-    { key: "tags", href: `/${locale}/tags`, match: (rest) => rest.startsWith("/tags") },
-    { key: "search", href: `/${locale}/search`, match: (rest) => rest.startsWith("/search") },
-  ];
-}
-
-/** Path after the locale prefix: "/ru/tags/x" → "/tags/x". */
-export function stripLocale(pathname: string | null): string | null {
-  if (pathname === null) return null;
-  const rest = pathname.replace(/^\/[^/]+/, "");
-  return rest === "/" ? "" : rest;
-}
+const ITEMS: Item[] = [
+  { key: "home", href: "/", match: (path) => path === "/" || path.startsWith("/posts") },
+  { key: "tags", href: "/tags", match: (path) => path.startsWith("/tags") },
+  { key: "search", href: "/search", match: (path) => path.startsWith("/search") },
+];
 
 /**
  * Presentational nav. `pathname` is null when rendered as the prerender fallback
  * (usePathname suspends on routes with unknown params), in which case nothing is marked current.
  */
 export function NavLinksView({
-  locale,
   labels,
   pathname,
   layout = "row",
   onNavigate,
 }: {
-  locale: Locale;
   labels: NavLabels;
   pathname: string | null;
   layout?: "row" | "column";
   onNavigate?: () => void;
 }) {
-  const rest = stripLocale(pathname);
   return (
     <ul className={clsx("flex", layout === "row" ? "items-center gap-1" : "flex-col gap-1")}>
-      {items(locale).map((item) => {
-        const current = rest !== null && item.match(rest);
+      {ITEMS.map((item) => {
+        const current = pathname !== null && item.match(pathname);
         const isSearch = item.key === "search";
         return (
           <li key={item.key}>
@@ -64,7 +51,7 @@ export function NavLinksView({
               )}
             >
               {isSearch && <Search aria-hidden className="size-[18px]" strokeWidth={1.75} />}
-              {(!isSearch || layout === "column") && labels[item.key]}
+              {(!isSearch || layout === "column") && <span>{labels[item.key]}</span>}
             </Link>
           </li>
         );

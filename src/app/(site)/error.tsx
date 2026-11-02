@@ -2,21 +2,13 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
 import { RotateCcw } from "lucide-react";
-import { defaultLocale, isLocale } from "@/lib/i18n/config";
 import ru from "@/lib/i18n/dictionaries/ru";
-import uk from "@/lib/i18n/dictionaries/uk";
-import en from "@/lib/i18n/dictionaries/en";
 
-// Only the small `error` slice of each dictionary is needed here.
-const strings = { ru: ru.error, uk: uk.error, en: en.error };
+// Only the small `error` slice of the dictionary is needed here.
+const t = ru.error;
 
 export default function Error({ error, retry }: { error: unknown; retry: () => void }) {
-  const params = useParams<{ lang?: string }>();
-  const locale = isLocale(params?.lang) ? params.lang : defaultLocale;
-  const t = strings[locale];
-
   useEffect(() => {
     console.error(error);
   }, [error]);
@@ -35,10 +27,10 @@ export default function Error({ error, retry }: { error: unknown; retry: () => v
           className="inline-flex h-11 items-center gap-2 rounded-full bg-accent px-5.5 text-[0.9375rem] font-medium text-accent-fg transition-colors duration-300 hover:bg-accent-hover"
         >
           <RotateCcw aria-hidden className="size-4" />
-          {t.retry}
+          <span>{t.retry}</span>
         </button>
         <Link
-          href={`/${locale}`}
+          href="/"
           className="inline-flex h-11 items-center rounded-full border border-border-strong px-5.5 text-[0.9375rem] text-fg transition-colors duration-300 hover:bg-surface-hover"
         >
           {t.home}

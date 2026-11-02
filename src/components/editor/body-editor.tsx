@@ -9,7 +9,7 @@ import { EditorContent, useEditor, type Editor, type JSONContent } from "@tiptap
 import { Placeholder } from "@tiptap/extensions";
 import { canonicalUnsplashProfileUrl, getExtensions } from "@/lib/content/extensions";
 import { countWords, readingMinutesFor } from "@/lib/content/stats";
-import type { Locale } from "@/lib/i18n/config";
+import { siteLocale } from "@/lib/i18n/config";
 import { useToast } from "@/components/admin/toast";
 import { SmartTypography } from "./extensions/smart-typography";
 import { Typograph } from "./extensions/typograph";
@@ -34,7 +34,6 @@ import type { BlockContext } from "./block-commands";
 import "./editor.css";
 
 export type BodyEditorProps = {
-  locale: Locale;
   initialContent: JSONContent;
   /** Called on every document change (debounce on the caller's side). */
   onChange: (editor: Editor) => void;
@@ -50,13 +49,13 @@ export type BodyEditorProps = {
 
 type Stats = { words: number; chars: number; minutes: number };
 
-function computeStats(editor: Editor, locale: Locale): Stats {
+function computeStats(editor: Editor): Stats {
   const text = editor.state.doc.textBetween(0, editor.state.doc.content.size, "\n\n", " ");
   let images = 0;
   editor.state.doc.descendants((n) => {
     if (n.type.name === "image") images++;
   });
-  return { words: countWords(text), chars: text.replace(/\n/g, "").length, minutes: readingMinutesFor(text, locale, images) };
+  return { words: countWords(text), chars: text.replace(/\n/g, "").length, minutes: readingMinutesFor(text, siteLocale, images) };
 }
 
 function plural(n: number, one: string, few: string, many: string) {
@@ -67,8 +66,8 @@ function plural(n: number, one: string, few: string, many: string) {
   return many;
 }
 
+/** The post body. Always Russian: spellcheck, typography rules and LanguageTool all use `siteLocale`. */
 export default function BodyEditor({
-  locale,
   initialContent,
   onChange,
   onReady,
@@ -104,10 +103,9 @@ export default function BodyEditor({
           return editor.isEmpty ? "Расскажите свою историю… «/» — вставить фото, заголовок, цитату" : "Пишите… или нажмите «/»";
         },
       }),
-      SmartTypography.configure({ locale }),
-      Typograph.configure({ locale }),
+      SmartTypography.configure({ locale: siteLocale }),
+      Typograph.configure({ locale: siteLocale }),
       LanguageTool.configure({
-        locale,
         enabled: readLanguageToolEnabled(),
         endpoint: "/api/languagetool",
         onStatus: (status) => setLtStatus(status),
@@ -126,7 +124,7 @@ export default function BodyEditor({
       SlashCommand,
       EditorUi,
     ];
-    // The editor is keyed by locale by the parent; extensions are intentionally created once.
+    // The parent remounts the editor (via `key`) when it replaces the content; extensions are intentionally created once.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -138,7 +136,7 @@ export default function BodyEditor({
     editorProps: {
       attributes: {
         class: "prose-sara editor-body",
-        lang: locale,
+        lang: siteLocale,
         spellcheck: "true",
         autocapitalize: "sentences",
         autocorrect: "on",
@@ -148,7 +146,7 @@ export default function BodyEditor({
       },
     },
     onCreate: ({ editor: e }) => {
-      setStats(computeStats(e, locale));
+      setStats(computeStats(e));
     },
     onUpdate: ({ editor: e }) => {
       cb.current.onChange(e);
@@ -168,14 +166,14 @@ export default function BodyEditor({
     let t: ReturnType<typeof setTimeout> | null = null;
     const handler = () => {
       if (t) clearTimeout(t);
-      t = setTimeout(() => setStats(computeStats(editor, locale)), 300);
+      t = setTimeout(() => setStats(computeStats(editor)), 300);
     };
     editor.on("update", handler);
     return () => {
       editor.off("update", handler);
       if (t) clearTimeout(t);
     };
-  }, [editor, locale]);
+  }, [editor]);
 
   // Shortcuts → UI.
   useEffect(() => {

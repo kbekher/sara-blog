@@ -6,26 +6,21 @@
  * SERVER ONLY in practice (server actions, route handlers, server components). Client components must import
  * from "@/lib/content/extensions" | "/types" | "/typography" instead, and use `editor.getHTML()` for previews.
  */
-import { generateHTML, generateJSON } from "@tiptap/html/server";
+import { generateHTML } from "@tiptap/html/server";
 import { getSchema, type JSONContent } from "@tiptap/core";
 import { Node as PMNode, type Schema } from "@tiptap/pm/model";
 import sanitize from "sanitize-html";
-import type { Locale } from "@/lib/i18n/config";
+import { siteLocale } from "@/lib/i18n/config";
 import { getExtensions, isAllowedHref, isUnsplashProfileUrl, PHOTO_CREDIT_CLASS } from "./extensions";
 import { readingMinutesFor } from "./stats";
 import { TEXT_COLORS, type RenderedContent } from "./types";
 
-const cachedExtensions = new Map<Locale, ReturnType<typeof getExtensions>>();
+let cachedExtensions: ReturnType<typeof getExtensions> | null = null;
 let cachedSchema: Schema | null = null;
 
-/** Extension set for rendering in `locale` (only photo-credit wording differs; the schema is the same). */
-function extensions(locale: Locale = "ru") {
-  let list = cachedExtensions.get(locale);
-  if (!list) {
-    list = getExtensions(locale);
-    cachedExtensions.set(locale, list);
-  }
-  return list;
+function extensions() {
+  cachedExtensions ??= getExtensions();
+  return cachedExtensions;
 }
 function schema(): Schema {
   cachedSchema ??= getSchema(extensions());
@@ -52,7 +47,7 @@ const SANITIZE_OPTIONS: sanitize.IOptions = {
   allowedAttributes: {
     a: ["href", "target", "rel", "title"],
     img: ["src", "alt", "title", "width", "height", "loading", "decoding"],
-    span: [{ name: "data-color", multiple: false, values: [...TEXT_COLORS] }, { name: "translate", multiple: false, values: ["no"] }],
+    span: [{ name: "data-color", multiple: false, values: [...TEXT_COLORS] }],
     // Structured stock-photo credit (see FigureImage); values are validated in transformTags.figure.
     figure: [{ name: "data-source", multiple: false, values: ["unsplash"] }, "data-credit-name", "data-credit-url"],
     mark: [{ name: "data-highlight", multiple: false, values: [...TEXT_COLORS] }],
@@ -133,28 +128,10 @@ function toNode(doc: JSONContent): PMNode {
   }
 }
 
-/** Tiptap JSON → sanitized HTML (`locale` selects the photo-credit wording). */
-export function jsonToHtml(doc: JSONContent, locale: Locale = "ru"): string {
+/** Tiptap JSON → sanitized HTML. */
+export function jsonToHtml(doc: JSONContent): string {
   const normalized = toNode(doc).toJSON() as JSONContent;
-  return sanitizeHtml(generateHTML(normalized, extensions(locale)));
-}
-
-/**
- * Normalize foreign HTML (machine-translation output, legacy content) before parsing:
- * h1 → h2 and h4–h6 → h3 so headings survive the [2, 3] level restriction.
- */
-function normalizeHeadings(html: string): string {
-  return html
-    .replace(/<(\/?)h1(\s|>)/gi, "<$1h2$2")
-    .replace(/<(\/?)h[4-6](\s|>)/gi, "<$1h3$2");
-}
-
-/** HTML → Tiptap JSON (sanitized first; used after machine translation of HTML). */
-export function htmlToJson(html: string): JSONContent {
-  const clean = sanitizeHtml(normalizeHeadings(html));
-  const json = generateJSON(clean, extensions()) as JSONContent;
-  if (!json.content || json.content.length === 0) return emptyDoc();
-  return json;
+  return sanitizeHtml(generateHTML(normalized, extensions()));
 }
 
 /* ───────────────────────── Plain text & reading time ───────────────────────── */
@@ -224,10 +201,10 @@ function trimEdgeParagraphs(doc: JSONContent): JSONContent {
   return { ...doc, content: start < end ? content.slice(start, end) : [{ type: "paragraph" }] };
 }
 
-/** Everything the save action needs for one translation: normalized JSON, sanitized HTML, plain text, reading time. */
-export function renderContent(doc: JSONContent, locale: Locale = "ru"): RenderedContent {
+/** Everything the save action needs for a post body: normalized JSON, sanitized HTML, plain text, reading time. */
+export function renderContent(doc: JSONContent): RenderedContent {
   const json = trimEdgeParagraphs(toNode(doc).toJSON() as JSONContent);
-  const html = sanitizeHtml(generateHTML(json, extensions(locale)));
+  const html = sanitizeHtml(generateHTML(json, extensions()));
   const plainText = extractPlainText(json);
-  return { json, html, plainText, readingMinutes: readingMinutesFor(plainText, locale, countImages(json)) };
+  return { json, html, plainText, readingMinutes: readingMinutesFor(plainText, siteLocale, countImages(json)) };
 }

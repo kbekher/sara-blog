@@ -19,7 +19,7 @@ import type { Node as PMNode } from "@tiptap/pm/model";
 import { Plugin, PluginKey, type EditorState, type Transaction } from "@tiptap/pm/state";
 import { Decoration, DecorationSet, type EditorView } from "@tiptap/pm/view";
 import type { LanguageToolMatch } from "@/lib/admin/types";
-import { languageToolCodes, type Locale } from "@/lib/i18n/config";
+import { siteLocaleTag } from "@/lib/i18n/config";
 
 export type LTKind = "spelling" | "grammar" | "style";
 
@@ -39,7 +39,6 @@ export type LTStatus =
   | { state: "error"; count: number; reason: string };
 
 export type LanguageToolOptions = {
-  locale: Locale;
   enabled: boolean;
   endpoint: string;
   onStatus?: (status: LTStatus) => void;
@@ -175,7 +174,8 @@ export class LTController {
   constructor(view: EditorView, options: LanguageToolOptions) {
     this.view = view;
     this.options = options;
-    this.lang = languageToolCodes[options.locale];
+    // Posts are always written in Russian (readers use browser translation for other languages).
+    this.lang = siteLocaleTag;
     this.dictionary = readSet(DICT_KEY);
     this.ignored = readSet(IGNORE_KEY);
   }
@@ -423,7 +423,7 @@ export const LanguageTool = Extension.create<LanguageToolOptions, { controller: 
   name: "languageTool",
 
   addOptions() {
-    return { locale: "ru", enabled: true, endpoint: "/api/languagetool" };
+    return { enabled: true, endpoint: "/api/languagetool" };
   },
 
   addStorage() {

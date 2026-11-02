@@ -25,17 +25,17 @@ export function Pagination({
         {page > 1 && (
           <Link href={href(page - 1)} rel="prev" className={linkClass}>
             <ArrowLeft aria-hidden className="size-4" />
-            {dict.pagination.newer}
+            <span>{dict.pagination.newer}</span>
           </Link>
         )}
       </div>
       <p className="text-sm text-fg-subtle tabular-nums" aria-current="page">
-        {fmt(dict.pagination.pageOf, { page, total: pageCount })}
+        <span key={page}>{fmt(dict.pagination.pageOf, { page, total: pageCount })}</span>
       </p>
       <div className="flex min-w-0 flex-1 justify-end">
         {page < pageCount && (
           <Link href={href(page + 1)} rel="next" className={linkClass}>
-            {dict.pagination.older}
+            <span>{dict.pagination.older}</span>
             <ArrowRight aria-hidden className="size-4" />
           </Link>
         )}

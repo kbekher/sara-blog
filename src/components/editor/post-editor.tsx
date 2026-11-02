@@ -1,11 +1,12 @@
 "use client";
 /**
- * The post editor page: header (languages, save status, preview, settings, publish), cover, title, subtitle
- * and the Tiptap body (dynamically imported, client-only).
+ * The post editor page: header (save status, preview, settings, publish), cover, title, subtitle
+ * and the Tiptap body (dynamically imported, client-only). Posts are written in Russian only — readers use
+ * their browser's translation — so spellcheck, typography and LanguageTool always run in Russian.
  *
  * Data flow
  *  - All editable data lives in one `data` object mirrored in `dataRef` (so save() always sees the latest).
- *  - The body editor's JSON is pulled lazily (`flushBody`) when saving, switching language or previewing.
+ *  - The body editor's JSON is pulled lazily (`flushBody`) when saving or previewing.
  *  - Autosave: 2 s after the last change, on blur, on tab hide and on Cmd/Ctrl+S; saves are serialized.
  *    A version counter detects edits made while a save was in flight.
  *  - A localStorage backup is written ~0.6 s after each change and offered back on load if it is newer
@@ -23,27 +24,18 @@ import {
   Send,
   RefreshCw,
   MoreHorizontal,
-  Languages,
   Loader2,
   CheckCircle2,
   AlertCircle,
   History,
-  PenLine,
   ExternalLink,
 } from "lucide-react";
 import { clsx } from "clsx";
 import type { CoverImage } from "@/db/schema";
-import type { PostEditorData, SavePostInput, TranslationInput } from "@/lib/admin/types";
-import { locales, localeNames, localeShort, type Locale } from "@/lib/i18n/config";
+import type { PostContentInput, PostEditorData, SavePostInput } from "@/lib/admin/types";
+import { siteLocale } from "@/lib/i18n/config";
 import { typographText } from "@/lib/content/typography";
-import {
-  deletePost,
-  getPost,
-  publishPost,
-  retranslatePost,
-  savePost,
-  unpublishPost,
-} from "@/app/admin/actions";
+import { deletePost, publishPost, savePost, unpublishPost } from "@/app/admin/actions";
 import { useToast } from "@/components/admin/toast";
 import { ConfirmDialog, Dialog } from "@/components/admin/dialog";
 import { SettingsPanel } from "@/components/admin/settings-panel";
@@ -72,23 +64,18 @@ function BodyLoading() {
 
 /* ───────────────────────── Types & helpers ───────────────────────── */
 
-type Draft = TranslationInput;
-type TMeta = { isMachineTranslated: boolean; isStale: boolean; updatedAt: string };
+type Draft = PostContentInput;
 
 type Data = {
   postId: string | null;
   slug: string;
-  sourceLocale: Locale;
   status: "draft" | "published";
   publishedAt: string | null;
   updatedAt: string | null;
   cover: CoverImage | null;
   featured: boolean;
   tagNames: string[];
-  drafts: Partial<Record<Locale, Draft>>;
-  meta: Partial<Record<Locale, TMeta>>;
-  /** non-source locales the author edited by hand (sent with every save) */
-  edited: Locale[];
+  draft: Draft;
 };
 
 type SaveState =
@@ -118,34 +105,24 @@ function draftHasContent(d: Draft | undefined): boolean {
 }
 
 function fromInitial(initial: PostEditorData | null): Data {
-  const sourceLocale = initial?.sourceLocale ?? "ru";
-  const drafts: Data["drafts"] = {};
-  const meta: Data["meta"] = {};
-  for (const l of locales) {
-    const t = initial?.translations[l];
-    if (!t) continue;
-    drafts[l] = { title: t.title, excerpt: t.excerpt, contentJson: t.contentJson ?? EMPTY_DOC };
-    meta[l] = { isMachineTranslated: t.isMachineTranslated, isStale: t.isStale, updatedAt: t.updatedAt };
-  }
-  if (!drafts[sourceLocale]) drafts[sourceLocale] = emptyDraft();
+  const source = initial?.source;
   return {
     postId: initial?.id ?? null,
     slug: initial?.slug ?? "",
-    sourceLocale,
     status: initial?.status ?? "draft",
     publishedAt: initial?.publishedAt ?? null,
     updatedAt: initial?.updatedAt ?? null,
     cover: initial?.cover ?? null,
     featured: initial?.featured ?? false,
-    tagNames: initial?.tags.map((t) => t.names[sourceLocale]).filter(Boolean) ?? [],
-    drafts,
-    meta,
-    edited: [],
+    tagNames: initial?.tags.map((t) => t.name).filter(Boolean) ?? [],
+    draft: source
+      ? { title: source.title, excerpt: source.excerpt, contentJson: source.contentJson ?? EMPTY_DOC }
+      : emptyDraft(),
   };
 }
 
 function backupPayload(d: Data): LocalDraftData {
-  return { slug: d.slug, cover: d.cover, featured: d.featured, tagNames: d.tagNames, drafts: d.drafts, edited: d.edited };
+  return { slug: d.slug, cover: d.cover, featured: d.featured, tagNames: d.tagNames, draft: d.draft };
 }
 
 function samePayload(a: LocalDraftData, b: LocalDraftData): boolean {
@@ -166,15 +143,13 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
     setData(dataRef.current);
   }, []);
 
-  const [active, setActive] = useState<Locale>(data.sourceLocale);
-  const activeRef = useRef(active);
   const [editorKey, setEditorKey] = useState(0);
   const [saveState, setSaveState] = useState<SaveState>(initial ? { kind: "saved", at: 0 } : { kind: "idle" });
-  const [busy, setBusy] = useState<null | "publish" | "update" | "retranslate" | "unpublish" | "delete">(null);
+  const [busy, setBusy] = useState<null | "publish" | "update" | "unpublish" | "delete">(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
   const [preview, setPreview] = useState<{ html: string } | null>(null);
-  const [confirm, setConfirm] = useState<null | { kind: "unpublish" | "delete" | "retranslate"; locale?: Locale }>(null);
+  const [confirm, setConfirm] = useState<null | "unpublish" | "delete">(null);
   const [moreOpen, setMoreOpen] = useState(false);
   const [restore, setRestore] = useState<LocalDraft | null>(null);
 
@@ -184,7 +159,6 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
   const moreRef = useRef<HTMLButtonElement>(null);
   const versionRef = useRef(0);
   const savedVersionRef = useRef(0);
-  const sourceChangedRef = useRef(false);
   const chainRef = useRef<Promise<boolean>>(Promise.resolve(true));
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const backupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -192,12 +166,7 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
   /** latest `save` (declared below) for timers and listeners */
   const saveRef = useRef<() => Promise<boolean>>(() => Promise.resolve(true));
 
-  useEffect(() => {
-    activeRef.current = active;
-  }, [active]);
-
-  const { sourceLocale } = data;
-  const draft = data.drafts[active];
+  const { draft } = data;
   const isScheduled = data.status === "published" && !!data.publishedAt && now > 0 && Date.parse(data.publishedAt) > now;
   const displayStatus: "draft" | "published" | "scheduled" = data.status === "draft" ? "draft" : isScheduled ? "scheduled" : "published";
 
@@ -205,14 +174,10 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
   const flushBody = useCallback(() => {
     const editor = editorRef.current;
     if (!editor || editor.isDestroyed) return;
-    const locale = activeRef.current;
     const json = editor.getJSON();
-    const current = dataRef.current.drafts[locale];
-    if (current && current.contentJson === json) return;
-    dataRef.current = {
-      ...dataRef.current,
-      drafts: { ...dataRef.current.drafts, [locale]: { ...(current ?? emptyDraft()), contentJson: json } },
-    };
+    const current = dataRef.current.draft;
+    if (current.contentJson === json) return;
+    dataRef.current = { ...dataRef.current, draft: { ...current, contentJson: json } };
     // No re-render needed: content is only read on (re)mount of the body editor.
   }, []);
 
@@ -221,7 +186,7 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
     if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
     flushBody();
     const d = dataRef.current;
-    const source = d.drafts[d.sourceLocale] ?? emptyDraft();
+    const source = d.draft;
     const startVersion = versionRef.current;
     if (!d.postId && !draftHasContent(source) && !d.cover) {
       savedVersionRef.current = startVersion;
@@ -229,11 +194,6 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
       return true;
     }
     setSaveState({ kind: "saving" });
-    const translations: Partial<Record<Locale, TranslationInput>> = {};
-    for (const l of d.edited) {
-      const t = d.drafts[l];
-      if (l !== d.sourceLocale && t) translations[l] = t;
-    }
     const input: SavePostInput = {
       id: d.postId ?? undefined,
       slug: d.slug.trim() || undefined,
@@ -241,10 +201,7 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
       featured: d.featured,
       tagNames: d.tagNames,
       source,
-      translations: Object.keys(translations).length ? translations : undefined,
     };
-    const sourceChanged = sourceChangedRef.current;
-    sourceChangedRef.current = false;
     let res: Awaited<ReturnType<typeof savePost>>;
     try {
       // ProseMirror attrs are not plain objects (null prototype); React would send them as
@@ -254,7 +211,6 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
       res = { ok: false, error: "Нет связи с сервером" };
     }
     if (!res.ok) {
-      if (sourceChanged) sourceChangedRef.current = true;
       lastErrorRef.current = res.error;
       setSaveState({ kind: "error", message: res.error });
       return false;
@@ -262,18 +218,7 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
     const { id, slug, updatedAt } = res.data;
     const wasNew = !d.postId;
     savedVersionRef.current = startVersion;
-    update((cur) => {
-      const meta = { ...cur.meta };
-      for (const l of locales) {
-        if (l === cur.sourceLocale) continue;
-        if (cur.edited.includes(l) && translations[l]) {
-          meta[l] = { isMachineTranslated: false, isStale: false, updatedAt };
-        } else if (sourceChanged && meta[l]) {
-          meta[l] = { ...meta[l]!, isStale: true };
-        }
-      }
-      return { ...cur, postId: id, slug, updatedAt, meta };
-    });
+    update((cur) => ({ ...cur, postId: id, slug, updatedAt }));
     if (wasNew) {
       // Keep the editor mounted (no navigation): just give the page its real URL.
       window.history.replaceState(null, "", `/admin/posts/${id}`);
@@ -306,20 +251,15 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
   }, [flushBody]);
 
   const markDirty = useCallback(
-    (locale?: Locale) => {
+    () => {
       versionRef.current++;
-      const d = dataRef.current;
-      if (locale && locale !== d.sourceLocale && !d.edited.includes(locale)) {
-        update((cur) => ({ ...cur, edited: [...cur.edited, locale] }));
-      }
-      if (!locale || locale === d.sourceLocale) sourceChangedRef.current = true;
       setSaveState((s) => (s.kind === "dirty" || s.kind === "saving" ? s : { kind: "dirty" }));
       if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
       autosaveTimer.current = setTimeout(() => void saveRef.current(), AUTOSAVE_MS);
       if (backupTimer.current) clearTimeout(backupTimer.current);
       backupTimer.current = setTimeout(writeBackup, BACKUP_MS);
     },
-    [update, writeBackup],
+    [writeBackup],
   );
 
   /* ── lifecycle: restore offer, unload guard, Cmd+S, tab hide, focus mode ── */
@@ -329,7 +269,7 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
       if (!backup) return;
       const current = backupPayload(dataRef.current);
       const newer = !initial || Date.parse(backup.savedAt) > Date.parse(initial.updatedAt);
-      const meaningful = Object.values(backup.data.drafts).some((dr) => draftHasContent(dr)) || !!backup.data.cover;
+      const meaningful = draftHasContent(backup.data.draft) || !!backup.data.cover;
       if (newer && meaningful && !samePayload(backup.data, current)) setRestore(backup);
       else removeLocalDraft(initial?.id ?? null);
     }, 0);
@@ -397,26 +337,22 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
 
   /* ── field handlers ── */
   const setDraftField = (field: "title" | "excerpt", value: string) => {
-    const locale = activeRef.current;
-    update((cur) => ({
-      ...cur,
-      drafts: { ...cur.drafts, [locale]: { ...(cur.drafts[locale] ?? emptyDraft()), [field]: value } },
-    }));
-    markDirty(locale);
+    update((cur) => ({ ...cur, draft: { ...cur.draft, [field]: value } }));
+    markDirty();
   };
 
   /**
    * Smart typography for title/subtitle on blur (the body gets it live via input rules): quotes, dashes,
-   * ellipsis, no-break spaces — locale-aware. Capitalization is left to the author. Only writes on change.
+   * ellipsis, no-break spaces — Russian rules. Capitalization is left to the author. Only writes on change.
    */
   const typographField = (field: "title" | "excerpt") => {
-    const current = dataRef.current.drafts[activeRef.current]?.[field];
+    const current = dataRef.current.draft[field];
     if (!current) return;
-    const next = typographText(current, activeRef.current, { capitalize: false });
+    const next = typographText(current, siteLocale, { capitalize: false });
     if (next !== current) setDraftField(field, next);
   };
 
-  const onBodyChange = useCallback(() => markDirty(activeRef.current), [markDirty]);
+  const onBodyChange = useCallback(() => markDirty(), [markDirty]);
   const onBodyReady = useCallback((editor: Editor | null) => {
     editorRef.current = editor;
   }, []);
@@ -425,41 +361,8 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
   }, []);
   const onSaveShortcut = useCallback(() => void saveRef.current(), []);
 
-  const switchLocale = (l: Locale) => {
-    if (l === active) return;
-    flushBody();
-    setActive(l);
-  };
-
-  const applyServerTranslations = useCallback(
-    (post: PostEditorData, force: Locale[] = []) => {
-      let touchedActive = false;
-      update((cur) => {
-        const drafts = { ...cur.drafts };
-        const meta = { ...cur.meta };
-        let edited = cur.edited;
-        for (const l of locales) {
-          if (l === cur.sourceLocale) continue;
-          const t = post.translations[l];
-          if (!t) continue;
-          const replace = force.includes(l) || !cur.edited.includes(l);
-          meta[l] = { isMachineTranslated: t.isMachineTranslated, isStale: t.isStale, updatedAt: t.updatedAt };
-          if (replace) {
-            drafts[l] = { title: t.title, excerpt: t.excerpt, contentJson: t.contentJson };
-            if (l === activeRef.current) touchedActive = true;
-            if (force.includes(l)) edited = edited.filter((x) => x !== l);
-          }
-        }
-        return { ...cur, drafts, meta, edited, updatedAt: post.updatedAt };
-      });
-      if (touchedActive) setEditorKey((k) => k + 1);
-    },
-    [update],
-  );
-
   /* ── actions ── */
-  const publicLinks = (slug: string) =>
-    locales.map((l) => ({ label: `${localeShort[l]} ↗`, href: `/${l}/posts/${slug}` }));
+  const publicLinks = (slug: string) => [{ label: "Открыть на сайте ↗", href: `/posts/${slug}` }];
 
   const ensureSaved = async (): Promise<string | null> => {
     const ok = await save();
@@ -473,27 +376,23 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
     return id;
   };
 
-  const handlePublish = async ({ publishAt, translate }: { publishAt?: string; translate: boolean }) => {
+  const handlePublish = async ({ publishAt }: { publishAt?: string }) => {
     setBusy("publish");
     try {
       const id = await ensureSaved();
       if (!id) return;
-      const res = await publishPost({ id, publishAt, translate });
+      const res = await publishPost({ id, publishAt });
       if (!res.ok) {
         toast.error("Не удалось опубликовать", { description: res.error });
         return;
       }
       update((cur) => ({ ...cur, status: "published", publishedAt: res.data.publishedAt }));
       setPublishOpen(false);
-      if (translate) {
-        const fresh = await getPost(id);
-        if (fresh.ok) applyServerTranslations(fresh.data);
-      }
       const slug = dataRef.current.slug;
       if (res.data.status === "scheduled") {
         toast.success("Запись запланирована", { description: `Появится ${formatDateTime(res.data.publishedAt)}.` });
       } else {
-        toast.success("Опубликовано! 🎉", { description: "Запись доступна на трёх языках:", links: publicLinks(slug) });
+        toast.success("Опубликовано! 🎉", { description: "Запись уже на сайте.", links: publicLinks(slug) });
       }
     } catch {
       toast.error("Не удалось опубликовать", { description: "Нет связи с сервером. Попробуйте ещё раз." });
@@ -505,54 +404,14 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
   const handleUpdate = async () => {
     setBusy("update");
     try {
+      // Saving a published post refreshes the public pages (the save action invalidates their cache).
       const id = await ensureSaved();
       if (!id) return;
-      const fresh = await getPost(id);
-      if (!fresh.ok) {
-        toast.error("Сохранено, но не удалось проверить переводы", { description: fresh.error });
-        return;
-      }
-      const stale = locales.filter((l) => l !== fresh.data.sourceLocale && fresh.data.translations[l]?.isStale);
-      const machine = stale.filter((l) => fresh.data.translations[l]?.isMachineTranslated);
-      const manual = stale.filter((l) => !fresh.data.translations[l]?.isMachineTranslated);
-      let post = fresh.data;
-      if (machine.length) {
-        const re = await retranslatePost(id, machine);
-        if (re.ok) post = re.data;
-        else toast.error("Переводы не обновились", { description: re.error });
-      }
-      applyServerTranslations(post, machine);
       toast.success("Изменения опубликованы", {
-        description: manual.length
-          ? `Перевод ${manual.map((l) => localeShort[l]).join(", ")} вы правили вручную, и он отстаёт от оригинала — проверьте его или переведите заново.`
-          : machine.length
-            ? `Переводы обновлены: ${machine.map((l) => localeShort[l]).join(", ")}.`
-            : undefined,
-        links: isScheduled ? undefined : publicLinks(post.slug),
+        links: isScheduled ? undefined : publicLinks(dataRef.current.slug),
       });
     } catch {
       toast.error("Не удалось обновить", { description: "Нет связи с сервером." });
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const handleRetranslate = async (l: Locale) => {
-    setConfirm(null);
-    setBusy("retranslate");
-    try {
-      const id = await ensureSaved();
-      if (!id) return;
-      const res = await retranslatePost(id, [l]);
-      if (!res.ok) {
-        toast.error("Не удалось перевести", { description: res.error });
-        return;
-      }
-      applyServerTranslations(res.data, [l]);
-      setEditorKey((k) => k + 1);
-      toast.success(`Готово: ${localeNames[l]}`, { description: "Перевод обновлён (Microsoft Translator)." });
-    } catch {
-      toast.error("Не удалось перевести", { description: "Нет связи с сервером." });
     } finally {
       setBusy(null);
     }
@@ -605,11 +464,6 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
     setPreview({ html: editorRef.current?.getHTML() ?? "" });
   };
 
-  const startManualTranslation = (l: Locale) => {
-    update((cur) => ({ ...cur, drafts: { ...cur.drafts, [l]: emptyDraft() } }));
-    setEditorKey((k) => k + 1);
-  };
-
   const applyRestore = () => {
     if (!restore) return;
     const b = restore.data;
@@ -619,8 +473,7 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
       cover: b.cover,
       featured: b.featured,
       tagNames: b.tagNames,
-      drafts: { ...cur.drafts, ...b.drafts },
-      edited: b.edited,
+      draft: b.draft,
     }));
     setRestore(null);
     setEditorKey((k) => k + 1);
@@ -629,8 +482,6 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
   };
 
   /* ── derived UI ── */
-  const meta = active === sourceLocale ? undefined : data.meta[active];
-  const isEdited = data.edited.includes(active);
   const saveLabel = useMemo(() => {
     switch (saveState.kind) {
       case "idle":
@@ -668,8 +519,7 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
       </span>
     );
 
-  const title = draft?.title ?? "";
-  const sourceTitle = data.drafts[sourceLocale]?.title ?? "";
+  const title = draft.title;
 
   return (
     <div ref={rootRef} className="min-h-dvh" data-typing="false">
@@ -679,31 +529,6 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
           <Link href="/admin" className="admin-icon-btn" aria-label="Все записи" title="Все записи">
             <ArrowLeft className="size-[18px]" aria-hidden />
           </Link>
-
-          <div role="tablist" aria-label="Язык версии" className="flex items-center rounded-full border border-border p-0.5">
-            {locales.map((l) => {
-              const m = data.meta[l];
-              const exists = l === sourceLocale || !!data.drafts[l];
-              const stale = l !== sourceLocale && m?.isStale;
-              return (
-                <button
-                  key={l}
-                  type="button"
-                  role="tab"
-                  aria-selected={active === l}
-                  aria-label={`${localeNames[l]}${l === sourceLocale ? " (оригинал)" : exists ? (stale ? " — перевод устарел" : "") : " — перевода нет"}`}
-                  onClick={() => switchLocale(l)}
-                  className={clsx(
-                    "relative rounded-full px-2.5 py-1 text-xs font-semibold tracking-wide transition-colors sm:px-3",
-                    active === l ? "bg-surface-hover text-fg-strong" : exists ? "text-fg-muted hover:text-fg" : "text-fg-subtle hover:text-fg-muted",
-                  )}
-                >
-                  {localeShort[l]}
-                  {stale ? <span className="absolute top-0.5 right-0.5 size-1.5 rounded-full bg-[var(--tc-orange)]" aria-hidden /> : null}
-                </button>
-              );
-            })}
-          </div>
 
           <div className="ml-auto hidden text-xs text-fg-subtle md:block">{saveStatus}</div>
 
@@ -743,7 +568,7 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
               </button>
               <Popover open={moreOpen} onClose={() => setMoreOpen(false)} anchorRef={moreRef} placement="bottom-end" label="Ещё действия" className="editor-menu w-64">
                 {!isScheduled && data.slug ? (
-                  <a className="editor-menu-item text-sm" href={`/${active}/posts/${data.slug}`} target="_blank" rel="noopener noreferrer">
+                  <a className="editor-menu-item text-sm" href={`/posts/${data.slug}`} target="_blank" rel="noopener noreferrer">
                     <ExternalLink className="size-4 text-fg-subtle" aria-hidden />
                     Открыть на сайте
                   </a>
@@ -764,7 +589,7 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
                   className="editor-menu-item text-sm text-[var(--tc-red)]"
                   onClick={() => {
                     setMoreOpen(false);
-                    setConfirm({ kind: "unpublish" });
+                    setConfirm("unpublish");
                   }}
                 >
                   <AlertCircle className="size-4" aria-hidden />
@@ -802,116 +627,57 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
           </div>
         ) : null}
 
-        {active !== sourceLocale ? (
-          <div className="mb-6 flex flex-wrap items-center gap-2 text-sm" data-chrome>
-            <Languages className="size-4 text-fg-subtle" aria-hidden />
-            <span className="text-fg-muted">{localeNames[active]}</span>
-            {draft ? (
-              <>
-                <span className="admin-badge" data-tone={isEdited || (meta && !meta.isMachineTranslated) ? "blue" : undefined}>
-                  {isEdited || (meta && !meta.isMachineTranslated) ? "Отредактировано вручную" : "Машинный перевод"}
-                </span>
-                {meta?.isStale ? (
-                  <span className="admin-badge" data-tone="amber" title="Оригинал изменился после перевода">
-                    Устарел
-                  </span>
-                ) : null}
-              </>
-            ) : null}
-            {data.postId ? (
-              <button
-                type="button"
-                className="admin-btn admin-btn-ghost admin-btn-sm ml-auto"
-                disabled={!!busy}
-                onClick={() => (draft ? setConfirm({ kind: "retranslate", locale: active }) : void handleRetranslate(active))}
-              >
-                {busy === "retranslate" ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <RefreshCw className="size-4" aria-hidden />}
-                {draft ? "Перевести заново" : "Перевести"}
-              </button>
-            ) : null}
-          </div>
-        ) : null}
+        <div className="mb-8">
+          <CoverArea
+            cover={data.cover}
+            title={title}
+            onChange={(cover) => {
+              update((cur) => ({ ...cur, cover }));
+              markDirty();
+            }}
+          />
+        </div>
 
-        {draft ? (
-          <>
-            {active === sourceLocale ? (
-              <div className="mb-8">
-                <CoverArea
-                  cover={data.cover}
-                  title={sourceTitle}
-                  onChange={(cover) => {
-                    update((cur) => ({ ...cur, cover }));
-                    markDirty();
-                  }}
-                />
-              </div>
-            ) : null}
+        <TitleField
+          variant="title"
+          lang={siteLocale}
+          value={title}
+          label="Заголовок"
+          placeholder="Заголовок"
+          maxLength={200}
+          onChange={(v) => setDraftField("title", v)}
+          onEnter={() => excerptRef.current?.focus()}
+          onBlur={() => {
+            typographField("title");
+            onBodyBlur();
+          }}
+        />
+        <TitleField
+          ref={excerptRef}
+          variant="excerpt"
+          lang={siteLocale}
+          value={draft.excerpt}
+          label="Подзаголовок"
+          placeholder="Подзаголовок — одна-две фразы о чём эта история"
+          maxLength={300}
+          onChange={(v) => setDraftField("excerpt", v)}
+          onEnter={() => editorRef.current?.commands.focus("start")}
+          onBlur={() => {
+            typographField("excerpt");
+            onBodyBlur();
+          }}
+        />
 
-            <TitleField
-              variant="title"
-              lang={active}
-              value={title}
-              label="Заголовок"
-              placeholder="Заголовок"
-              maxLength={200}
-              onChange={(v) => setDraftField("title", v)}
-              onEnter={() => excerptRef.current?.focus()}
-              onBlur={() => {
-                typographField("title");
-                onBodyBlur();
-              }}
-            />
-            <TitleField
-              ref={excerptRef}
-              variant="excerpt"
-              lang={active}
-              value={draft.excerpt}
-              label="Подзаголовок"
-              placeholder="Подзаголовок — одна-две фразы о чём эта история"
-              maxLength={300}
-              onChange={(v) => setDraftField("excerpt", v)}
-              onEnter={() => editorRef.current?.commands.focus("start")}
-              onBlur={() => {
-                typographField("excerpt");
-                onBodyBlur();
-              }}
-            />
-
-            <BodyEditor
-              key={`${active}-${editorKey}`}
-              locale={active}
-              initialContent={draft.contentJson}
-              onChange={onBodyChange}
-              onReady={onBodyReady}
-              onSaveShortcut={onSaveShortcut}
-              onBlur={onBodyBlur}
-              title={sourceTitle}
-              saveStatus={saveStatus}
-            />
-          </>
-        ) : (
-          <div className="rounded-2xl border border-dashed border-border-strong px-6 py-14 text-center">
-            <Languages className="mx-auto size-8 text-fg-subtle" aria-hidden />
-            <h2 className="mt-4 font-serif text-2xl text-fg-strong">Перевода на {localeNames[active].toLowerCase()} пока нет</h2>
-            <p className="mx-auto mt-2 max-w-md text-sm text-fg-muted">
-              {data.postId
-                ? "Переведите автоматически через Microsoft Translator и поправьте, если нужно. Или напишите версию сами."
-                : "Сначала напишите оригинал — запись сохранится автоматически, и её можно будет перевести."}
-            </p>
-            <div className="mt-6 flex flex-wrap justify-center gap-2">
-              {data.postId ? (
-                <button type="button" className="admin-btn admin-btn-primary" disabled={!!busy} onClick={() => void handleRetranslate(active)}>
-                  {busy === "retranslate" ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Languages className="size-4" aria-hidden />}
-                  Перевести автоматически
-                </button>
-              ) : null}
-              <button type="button" className="admin-btn admin-btn-secondary" onClick={() => startManualTranslation(active)}>
-                <PenLine className="size-4" aria-hidden />
-                Написать вручную
-              </button>
-            </div>
-          </div>
-        )}
+        <BodyEditor
+          key={editorKey}
+          initialContent={draft.contentJson}
+          onChange={onBodyChange}
+          onReady={onBodyReady}
+          onSaveShortcut={onSaveShortcut}
+          onBlur={onBodyBlur}
+          title={title}
+          saveStatus={saveStatus}
+        />
       </main>
 
       {/* ── Dialogs ── */}
@@ -919,7 +685,6 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
         postId={data.postId}
-        sourceLocale={sourceLocale}
         slug={data.slug}
         onSlugChange={(slug) => {
           update((cur) => ({ ...cur, slug }));
@@ -935,7 +700,7 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
           update((cur) => ({ ...cur, featured }));
           markDirty();
         }}
-        excerpt={draft?.excerpt ?? ""}
+        excerpt={draft.excerpt}
         onExcerptChange={(v) => setDraftField("excerpt", v)}
         status={displayStatus}
         publishedAt={data.publishedAt}
@@ -945,7 +710,7 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
         }}
         onDelete={() => {
           setSettingsOpen(false);
-          setConfirm({ kind: "delete" });
+          setConfirm("delete");
         }}
       />
 
@@ -960,16 +725,16 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
 
       <Dialog open={!!preview} onClose={() => setPreview(null)} title="Предпросмотр" size="lg" bodyClassName="px-5 sm:px-10">
         {preview ? (
-          <article lang={active} className="mx-auto max-w-[44rem] pb-10">
-            {active === sourceLocale && data.cover ? (
+          <article lang={siteLocale} className="mx-auto max-w-[44rem] pb-10">
+            {data.cover ? (
               // eslint-disable-next-line @next/next/no-img-element -- preview of an arbitrary remote cover
               <img src={data.cover.url} alt={data.cover.alt} className="mb-8 w-full rounded-2xl" />
             ) : null}
             <h1 className="font-serif text-4xl leading-tight font-semibold text-balance text-fg-strong">{title || "Без заголовка"}</h1>
-            {draft?.excerpt ? <p className="mt-3 font-serif text-xl text-fg-muted italic">{draft.excerpt}</p> : null}
+            {draft.excerpt ? <p className="mt-3 font-serif text-xl text-fg-muted italic">{draft.excerpt}</p> : null}
             <div className="prose-sara mt-8" dangerouslySetInnerHTML={{ __html: preview.html }} />
             {data.status === "published" && !isScheduled && data.slug ? (
-              <a href={`/${active}/posts/${data.slug}`} target="_blank" rel="noopener noreferrer" className="admin-btn admin-btn-secondary mt-10">
+              <a href={`/posts/${data.slug}`} target="_blank" rel="noopener noreferrer" className="admin-btn admin-btn-secondary mt-10">
                 <ExternalLink className="size-4" aria-hidden />
                 Открыть на сайте
               </a>
@@ -979,9 +744,9 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
       </Dialog>
 
       <ConfirmDialog
-        open={confirm?.kind === "unpublish"}
+        open={confirm === "unpublish"}
         title="Снять запись с публикации?"
-        description="Она перестанет быть видна читателям на всех языках и снова станет черновиком."
+        description="Она перестанет быть видна читателям и снова станет черновиком."
         confirmLabel="Снять с публикации"
         danger
         busy={busy === "unpublish"}
@@ -989,22 +754,13 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
         onClose={() => setConfirm(null)}
       />
       <ConfirmDialog
-        open={confirm?.kind === "delete"}
+        open={confirm === "delete"}
         title="Удалить запись навсегда?"
-        description="Удалятся все языковые версии. Это нельзя отменить."
+        description="Это нельзя отменить."
         confirmLabel="Удалить"
         danger
         busy={busy === "delete"}
         onConfirm={() => void handleDelete()}
-        onClose={() => setConfirm(null)}
-      />
-      <ConfirmDialog
-        open={confirm?.kind === "retranslate"}
-        title={`Перевести заново: ${confirm?.locale ? localeNames[confirm.locale] : ""}?`}
-        description="Текущая версия перевода (включая ваши правки) будет заменена новым машинным переводом."
-        confirmLabel="Перевести заново"
-        busy={busy === "retranslate"}
-        onConfirm={() => confirm?.locale && void handleRetranslate(confirm.locale)}
         onClose={() => setConfirm(null)}
       />
     </div>

@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { notFound } from "next/navigation";
 import { SearchX } from "lucide-react";
-import { isLocale, type Locale } from "@/lib/i18n/config";
 import { fmt, getDictionary, plural, type Dictionary } from "@/lib/i18n/get-dictionary";
 import { searchPosts } from "@/lib/posts/public-queries";
 import { PageIntro } from "@/components/site/page-intro";
@@ -14,22 +12,16 @@ import { EmptyState } from "@/components/site/empty-state";
 import { ListSkeleton } from "@/components/site/skeletons";
 import { pageAlternates } from "../_lib/seo";
 
-export async function generateMetadata({ params }: PageProps<"/[lang]/search">): Promise<Metadata> {
-  const { lang } = await params;
-  if (!isLocale(lang)) return {};
-  const dict = getDictionary(lang);
-  return {
-    title: dict.meta.searchTitle,
-    description: dict.meta.searchDescription,
-    alternates: pageAlternates(lang, "/search"),
-    robots: { index: false, follow: true },
-  };
-}
+const dict = getDictionary();
 
-export default async function SearchPage({ params, searchParams }: PageProps<"/[lang]/search">) {
-  const { lang } = await params;
-  if (!isLocale(lang)) notFound();
-  const dict = getDictionary(lang);
+export const metadata: Metadata = {
+  title: dict.meta.searchTitle,
+  description: dict.meta.searchDescription,
+  alternates: pageAlternates("/search"),
+  robots: { index: false, follow: true },
+};
+
+export default function SearchPage({ searchParams }: PageProps<"/search">) {
   const labels = {
     label: dict.search.label,
     placeholder: dict.search.placeholder,
@@ -47,7 +39,7 @@ export default async function SearchPage({ params, searchParams }: PageProps<"/[
       </div>
       <div className="mt-10">
         <Suspense fallback={<ListSkeleton />}>
-          <SearchResults locale={lang} dict={dict} searchParams={searchParams} />
+          <SearchResults dict={dict} searchParams={searchParams} />
         </Suspense>
       </div>
     </div>
@@ -55,13 +47,11 @@ export default async function SearchPage({ params, searchParams }: PageProps<"/[
 }
 
 async function SearchResults({
-  locale,
   dict,
   searchParams,
 }: {
-  locale: Locale;
   dict: Dictionary;
-  searchParams: PageProps<"/[lang]/search">["searchParams"];
+  searchParams: PageProps<"/search">["searchParams"];
 }) {
   const raw = (await searchParams).q;
   const query = (Array.isArray(raw) ? raw[0] : (raw ?? "")).trim();
@@ -70,7 +60,7 @@ async function SearchResults({
     return <p className="text-fg-muted text-pretty">{dict.search.hint}</p>;
   }
 
-  const results = await searchPosts(locale, query);
+  const results = await searchPosts(query);
 
   if (results.length === 0) {
     return (
@@ -80,7 +70,7 @@ async function SearchResults({
         icon={<SearchX aria-hidden className="size-5" strokeWidth={1.75} />}
       >
         <Link
-          href={`/${locale}/tags`}
+          href="/tags"
           className="inline-flex h-10 items-center rounded-full border border-border px-4 text-sm text-fg transition-colors hover:bg-surface-hover"
         >
           {dict.nav.tags}
@@ -91,7 +81,7 @@ async function SearchResults({
 
   return (
     <section aria-live="polite">
-      <p className="mb-6 text-sm text-fg-subtle">{plural(locale, results.length, dict.search.results)}</p>
+      <p className="mb-6 text-sm text-fg-subtle">{plural(results.length, dict.search.results)}</p>
       <ol className="divide-y divide-border border-y border-border">
         {results.map((post, i) => (
           <li
@@ -100,7 +90,7 @@ async function SearchResults({
             style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
           >
             <Link
-              href={`/${locale}/posts/${post.slug}`}
+              href={`/posts/${post.slug}`}
               className="group -mx-4 block rounded-2xl px-4 py-6 transition-colors duration-300 hover:bg-surface"
             >
               <h2 className="font-serif text-[1.375rem] leading-snug font-semibold text-fg-strong text-balance group-hover:text-accent-hover">
@@ -109,13 +99,7 @@ async function SearchResults({
               <p className="mt-2 text-[0.9375rem] leading-relaxed text-fg-muted text-pretty">
                 <Highlight text={post.snippet} query={query} />
               </p>
-              <PostMeta
-                className="mt-3"
-                locale={locale}
-                dict={dict}
-                publishedAt={post.publishedAt}
-                readingMinutes={post.readingMinutes}
-              />
+              <PostMeta className="mt-3" dict={dict} publishedAt={post.publishedAt} readingMinutes={post.readingMinutes} />
             </Link>
           </li>
         ))}

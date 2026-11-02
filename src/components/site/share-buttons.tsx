@@ -11,7 +11,11 @@ const noopSubscribe = () => () => {};
 const buttonClass =
   "inline-flex h-10 items-center gap-2 rounded-full border border-border px-4 text-sm text-fg transition-[background-color,border-color,color] duration-300 ease-apple hover:border-border-strong hover:bg-surface-hover hover:text-fg-strong";
 
-/** Copy-link + native share sheet (shown only where navigator.share exists). */
+/**
+ * Copy-link + native share sheet (shown only where navigator.share exists).
+ * The copy feedback text is a keyed element, so a browser-translated page gets a fresh node to translate instead of
+ * React editing a text node the translator has replaced (see translate-guard.tsx).
+ */
 export function ShareButtons({ url, title, labels }: { url: string; title: string; labels: ShareLabels }) {
   const canShare = useSyncExternalStore(
     noopSubscribe,
@@ -49,18 +53,18 @@ export function ShareButtons({ url, title, labels }: { url: string; title: strin
         ) : (
           <Link2 aria-hidden className="size-4" />
         )}
-        <span className={clsx(copyState === "failed" && "text-(--tc-red)")}>
+        <span key={copyState} className={clsx(copyState === "failed" && "text-(--tc-red)")}>
           {copyState === "copied" ? labels.copied : copyState === "failed" ? labels.copyFailed : labels.copyLink}
         </span>
       </button>
       {canShare && (
         <button type="button" onClick={share} className={buttonClass}>
           <Share aria-hidden className="size-4" />
-          {labels.shareNative}
+          <span>{labels.shareNative}</span>
         </button>
       )}
       <span aria-live="polite" className="sr-only">
-        {copyState === "copied" ? labels.copied : copyState === "failed" ? labels.copyFailed : ""}
+        {copyState !== "idle" && <span key={copyState}>{copyState === "copied" ? labels.copied : labels.copyFailed}</span>}
       </span>
     </div>
   );

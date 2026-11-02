@@ -11,7 +11,7 @@ import { clsx } from "clsx";
 import {
   canonicalUnsplashProfileUrl,
   FigureImage,
-  PHOTO_CREDIT_LABELS,
+  PHOTO_CREDIT_LABEL,
   UNSPLASH_HOME,
   withUnsplashUtm,
 } from "@/lib/content/extensions";
@@ -26,7 +26,7 @@ function ImageView({ node, updateAttributes, deleteNode, selected, editor, getPo
   const creditName = ((node.attrs.creditName as string | null) ?? "").trim();
   const creditUrl = canonicalUnsplashProfileUrl(node.attrs.creditUrl);
   const hasCredit = node.attrs.source === "unsplash" && !!creditName && !!creditUrl;
-  const creditLabel = PHOTO_CREDIT_LABELS.ru;
+  const creditLabel = PHOTO_CREDIT_LABEL;
   const [altOpen, setAltOpen] = useState(false);
   const [altDraft, setAltDraft] = useState(alt);
   const altId = useId();

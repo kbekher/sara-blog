@@ -9,21 +9,22 @@ import { updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { del } from "@vercel/blob";
 import type { JSONContent } from "@tiptap/core";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
-import { postTags, postTranslations, posts, type CoverImage } from "@/db/schema";
+import { postTags, posts, type CoverImage } from "@/db/schema";
 import type {
   ActionResult,
   PostEditorData,
   PostListItem,
   PublishInput,
   SavePostInput,
+  TagItem,
 } from "@/lib/admin/types";
 import { LOGIN_PATH } from "@/lib/auth/config";
 import { deleteSession, getSession } from "@/lib/auth/session";
 import { renderContent } from "@/lib/content";
-import { isLocale, locales, sourceLocale as defaultSourceLocale, type Locale } from "@/lib/i18n/config";
+import { siteLocale } from "@/lib/i18n/config";
 import {
   collectBlobUrls,
   getPostBundle,
@@ -34,19 +35,13 @@ import {
   normalizeTagNames,
   resolveTagIds,
   runBatch,
-  sourceTranslation,
   toEditorData,
   uniquePostSlug,
-  upsertTranslation,
+  upsertPostText,
   urlsReferencedElsewhere,
-  isTranslationStale,
-  type TranslationRow,
 } from "@/lib/posts/admin-queries";
 import { POSTS_TAG, postTag } from "@/lib/posts/public-queries";
-import { hashSource } from "@/lib/services/content-hash";
-import { isTranslatorConfigured, TranslationError } from "@/lib/services/translator";
 import { SLUG_MAX_LENGTH, SLUG_PATTERN, slugify } from "@/lib/services/slug";
-import { translatePost } from "@/lib/services/translate-post";
 
 /* ───────────────────────── Shared helpers ───────────────────────── */
 
@@ -83,7 +78,6 @@ function isUniqueViolation(error: unknown): boolean {
 
 /** Maps unexpected errors to a friendly message and logs the details server-side. */
 function unexpected(action: string, error: unknown): Failure {
-  if (error instanceof TranslationError) return fail(error.userMessage);
   if (error instanceof Error && error.message.includes("DATABASE_URL")) {
     return fail("База данных не настроена: задайте DATABASE_URL (см. README).");
   }
@@ -144,7 +138,7 @@ const docSchema = z.custom<JSONContent>(
   "Некорректное содержимое документа.",
 );
 
-const translationSchema = z.object({
+const contentSchema = z.object({
   title: z.string().max(200, "Заголовок — не более 200 символов."),
   excerpt: z.string().max(400, "Краткое описание — не более 400 символов."),
   contentJson: docSchema,
@@ -162,14 +156,12 @@ const saveSchema = z.object({
   cover: coverSchema,
   featured: z.boolean(),
   tagNames: z.array(z.string().max(40, "Тег — не более 40 символов.")).max(MAX_TAGS, `Не более ${MAX_TAGS} тегов.`),
-  source: translationSchema,
-  translations: z.partialRecord(z.enum(locales), translationSchema).optional(),
+  source: contentSchema,
 });
 
 const publishSchema = z.object({
   id: z.uuid("Некорректный идентификатор поста."),
   publishAt: z.iso.datetime({ offset: true, message: "Некорректная дата публикации." }).optional(),
-  translate: z.boolean().optional(),
 });
 
 const idSchema = z.uuid("Некорректный идентификатор поста.");
@@ -213,13 +205,11 @@ export async function savePost(
     if (data.id && !existing) return NOT_FOUND;
 
     const id = existing?.post.id ?? randomUUID();
-    const sourceLocale: Locale = existing?.post.sourceLocale ?? defaultSourceLocale;
     const now = new Date();
 
-    // Source content: normalized & rendered by the shared pipeline (sanitized HTML, plain text, reading time).
-    const rendered = renderContent(data.source.contentJson, sourceLocale);
+    // Content: normalized & rendered by the shared pipeline (sanitized HTML, plain text, reading time).
+    const rendered = renderContent(data.source.contentJson);
     const source = { title: data.source.title.trim(), excerpt: data.source.excerpt.trim(), contentJson: rendered.json };
-    const sourceHash = hashSource(source);
 
     // Slug: explicit value wins; otherwise stable once the post has ever been published,
     // and regenerated from the title while it's still an unpublished draft.
@@ -233,62 +223,37 @@ export async function savePost(
     } else if (existing && (existing.post.publishedAt || existing.post.status === "published")) {
       slug = existing.post.slug;
     } else {
-      const base = slugify(source.title, sourceLocale) || existing?.post.slug || `post-${id.slice(0, 8)}`;
+      const base = slugify(source.title, siteLocale) || existing?.post.slug || `post-${id.slice(0, 8)}`;
       slug = await uniquePostSlug(base, id);
     }
 
-    const tagIds = await resolveTagIds(normalizeTagNames(data.tagNames, sourceLocale).slice(0, MAX_TAGS), sourceLocale);
-
-    const translationRows: TranslationRow[] = [
-      {
-        postId: id,
-        locale: sourceLocale,
-        ...source,
-        contentHtml: rendered.html,
-        plainText: rendered.plainText,
-        readingMinutes: rendered.readingMinutes,
-        isMachineTranslated: false,
-        // The source row stores the hash of itself: lets the post list detect stale translations cheaply.
-        sourceHash,
-        updatedAt: now,
-      },
-    ];
-
-    for (const [locale, t] of Object.entries(data.translations ?? {})) {
-      if (!t || !isLocale(locale) || locale === sourceLocale) continue;
-      const previous = existing?.translations.find((row) => row.locale === locale);
-      const r = renderContent(t.contentJson, locale);
-      const next = { title: t.title.trim(), excerpt: t.excerpt.trim(), contentJson: r.json };
-      // Unchanged (e.g. an untouched machine translation sent back by the editor) → keep its flags.
-      if (previous && hashSource(previous) === hashSource(next)) continue;
-      translationRows.push({
-        postId: id,
-        locale,
-        ...next,
-        contentHtml: r.html,
-        plainText: r.plainText,
-        readingMinutes: r.readingMinutes,
-        isMachineTranslated: false,
-        sourceHash,
-        updatedAt: now,
-      });
-    }
+    const tagIds = await resolveTagIds(normalizeTagNames(data.tagNames).slice(0, MAX_TAGS));
 
     const cover = (data.cover ?? null) as CoverImage | null;
     await runBatch([
       existing
-        ? db.update(posts).set({ slug, cover, featured: data.featured, updatedAt: now }).where(eq(posts.id, id))
+        ? db
+            .update(posts)
+            .set({ slug, cover, featured: data.featured, sourceLocale: siteLocale, updatedAt: now })
+            .where(eq(posts.id, id))
         : db.insert(posts).values({
             id,
             slug,
             status: "draft",
-            sourceLocale,
+            sourceLocale: siteLocale,
             cover,
             featured: data.featured,
             createdAt: now,
             updatedAt: now,
           }),
-      ...translationRows.map(upsertTranslation),
+      upsertPostText({
+        postId: id,
+        ...source,
+        contentHtml: rendered.html,
+        plainText: rendered.plainText,
+        readingMinutes: rendered.readingMinutes,
+        updatedAt: now,
+      }),
       db.delete(postTags).where(eq(postTags.postId, id)),
       ...(tagIds.length > 0 ? [db.insert(postTags).values(tagIds.map((tagId) => ({ postId: id, tagId })))] : []),
     ]);
@@ -304,7 +269,7 @@ export async function savePost(
   }
 }
 
-/** Publish now or schedule. Translates missing/stale locales via Microsoft Translator unless translate=false. */
+/** Publish now or schedule. */
 export async function publishPost(
   input: PublishInput,
 ): Promise<ActionResult<{ status: "published" | "scheduled"; publishedAt: string }>> {
@@ -312,13 +277,12 @@ export async function publishPost(
   if (denied) return denied;
   const parsed = publishSchema.safeParse(input);
   if (!parsed.success) return validationFailure(parsed.error);
-  const { id, publishAt, translate = true } = parsed.data;
+  const { id, publishAt } = parsed.data;
 
   try {
     const bundle = await getPostBundle(id);
     if (!bundle) return NOT_FOUND;
-    const { post } = bundle;
-    const source = sourceTranslation(bundle);
+    const { post, source } = bundle;
     if (!source || !source.title.trim()) {
       return fail("Добавьте заголовок перед публикацией.", { title: "Добавьте заголовок." });
     }
@@ -337,43 +301,7 @@ export async function publishPost(
       publishedAt = now;
     }
 
-    const sourceHash = hashSource(source);
-    const rows: TranslationRow[] = [];
-
-    if (translate) {
-      if (!isTranslatorConfigured()) {
-        console.warn("[admin:publishPost] AZURE_TRANSLATOR_KEY not set — publishing without translations (site falls back to the source language).");
-      } else {
-        // Missing locales and stale MACHINE translations are (re)translated. Hand-edited translations are
-        // never overwritten automatically (use "retranslate" for that); they keep showing as stale in the editor.
-        const targets = locales.filter((locale) => {
-          if (locale === post.sourceLocale) return false;
-          const existing = bundle.translations.find((t) => t.locale === locale);
-          if (!existing) return true;
-          return existing.isMachineTranslated && isTranslationStale(existing, post.sourceLocale, sourceHash);
-        });
-        const translated = await translatePost(
-          { locale: post.sourceLocale, title: source.title, excerpt: source.excerpt, contentHtml: source.contentHtml },
-          targets,
-        );
-        for (const t of translated) {
-          rows.push({ postId: id, ...t, isMachineTranslated: true, sourceHash, updatedAt: now });
-        }
-      }
-    }
-
-    await runBatch([
-      db.update(posts).set({ status: "published", publishedAt, updatedAt: now }).where(eq(posts.id, id)),
-      ...rows.map(upsertTranslation),
-      ...(source.sourceHash !== sourceHash
-        ? [
-            db
-              .update(postTranslations)
-              .set({ sourceHash })
-              .where(and(eq(postTranslations.postId, id), eq(postTranslations.locale, post.sourceLocale))),
-          ]
-        : []),
-    ]);
+    await db.update(posts).set({ status: "published", publishedAt, updatedAt: now }).where(eq(posts.id, id));
 
     invalidatePublic(post.slug);
     return {
@@ -409,14 +337,14 @@ export async function deletePost(id: string): Promise<ActionResult> {
   if (denied) return denied;
   if (!idSchema.safeParse(id).success) return NOT_FOUND;
   try {
-    const bundle = await getPostBundle(id);
-    if (!bundle) return NOT_FOUND;
+    const [post] = await db.select().from(posts).where(eq(posts.id, id)).limit(1);
+    if (!post) return NOT_FOUND;
 
-    const blobUrls = collectBlobUrls(bundle);
+    const blobUrls = await collectBlobUrls(post);
     const shared = blobUrls.length > 0 ? await urlsReferencedElsewhere(blobUrls, id) : new Set<string>();
 
-    await db.delete(posts).where(eq(posts.id, id)); // translations & post_tags cascade
-    if (bundle.post.status === "published") invalidatePublic(bundle.post.slug);
+    await db.delete(posts).where(eq(posts.id, id)); // post text rows & post_tags cascade
+    if (post.status === "published") invalidatePublic(post.slug);
 
     // Best-effort cleanup of uploaded images no other post uses; never fails the action.
     const orphans = blobUrls.filter((url) => !shared.has(url));
@@ -429,46 +357,7 @@ export async function deletePost(id: string): Promise<ActionResult> {
   }
 }
 
-/** Re-run machine translation for given locales (default: all non-source), overwriting them. */
-export async function retranslatePost(id: string, targetLocales?: Locale[]): Promise<ActionResult<PostEditorData>> {
-  const denied = await unauthorized();
-  if (denied) return denied;
-  if (!idSchema.safeParse(id).success) return NOT_FOUND;
-  if (targetLocales && !targetLocales.every((l) => isLocale(l))) return fail("Неизвестный язык перевода.");
-  if (!isTranslatorConfigured()) return fail("Перевод недоступен: не задан AZURE_TRANSLATOR_KEY (см. README).");
-
-  try {
-    const bundle = await getPostBundle(id);
-    if (!bundle) return NOT_FOUND;
-    const { post } = bundle;
-    const source = sourceTranslation(bundle);
-    if (!source || (!source.title.trim() && !source.plainText.trim())) {
-      return fail("Нечего переводить — сначала напишите и сохраните текст.");
-    }
-
-    const targets = (targetLocales ?? [...locales]).filter((l) => l !== post.sourceLocale);
-    if (targets.length === 0) return { ok: true, data: toEditorData(bundle) };
-
-    const sourceHash = hashSource(source);
-    const now = new Date();
-    const translated = await translatePost(
-      { locale: post.sourceLocale, title: source.title, excerpt: source.excerpt, contentHtml: source.contentHtml },
-      targets,
-    );
-    await runBatch([
-      ...translated.map((t) => upsertTranslation({ postId: id, ...t, isMachineTranslated: true, sourceHash, updatedAt: now })),
-      db.update(posts).set({ updatedAt: now }).where(eq(posts.id, id)),
-    ]);
-
-    if (post.status === "published") invalidatePublic(post.slug);
-    const fresh = await getPostBundle(id);
-    return fresh ? { ok: true, data: toEditorData(fresh) } : NOT_FOUND;
-  } catch (error) {
-    return unexpected("retranslatePost", error);
-  }
-}
-
-export async function listTags(): Promise<ActionResult<{ id: string; slug: string; names: Record<Locale, string> }[]>> {
+export async function listTags(): Promise<ActionResult<TagItem[]>> {
   const denied = await unauthorized();
   if (denied) return denied;
   try {

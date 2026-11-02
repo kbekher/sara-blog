@@ -4,40 +4,32 @@
  */
 import type { JSONContent } from "@tiptap/core";
 import type { CoverImage } from "@/db/schema";
-import type { Locale } from "@/lib/i18n/config";
 
 export type ActionResult<T = undefined> =
   | ({ ok: true } & (T extends undefined ? object : { data: T }))
   | { ok: false; error: string; fieldErrors?: Record<string, string> };
 
-export type TranslationInput = {
+/** The post's text. Posts are written (and shown) in Russian only; readers use browser translation. */
+export type PostContentInput = {
   title: string;
   excerpt: string;
   contentJson: JSONContent;
 };
 
+/** A tag as the admin sees it: `name` is its (Russian) display name. */
+export type TagItem = { id: string; slug: string; name: string };
+
 export type PostEditorData = {
   id: string;
   slug: string;
   status: "draft" | "published";
-  sourceLocale: Locale;
   cover: CoverImage | null;
   featured: boolean;
   /** ISO string or null */
   publishedAt: string | null;
   updatedAt: string;
-  tags: { id: string; slug: string; names: Record<Locale, string> }[];
-  translations: Partial<
-    Record<
-      Locale,
-      TranslationInput & {
-        isMachineTranslated: boolean;
-        /** true when the source changed after this translation was produced */
-        isStale: boolean;
-        updatedAt: string;
-      }
-    >
-  >;
+  tags: TagItem[];
+  source: PostContentInput;
 };
 
 export type PostListItem = {
@@ -49,8 +41,6 @@ export type PostListItem = {
   cover: CoverImage | null;
   publishedAt: string | null;
   updatedAt: string;
-  /** locales that exist & are not stale */
-  locales: Locale[];
 };
 
 export type SavePostInput = {
@@ -58,20 +48,16 @@ export type SavePostInput = {
   slug?: string; // omitted → generated (transliterated) from source title
   cover: CoverImage | null;
   featured: boolean;
-  /** tag display names in the source locale, e.g. ["путешествия", "семья"] */
+  /** tag display names, e.g. ["путешествия", "семья"] */
   tagNames: string[];
-  /** source-locale content */
-  source: TranslationInput;
-  /** optional hand-edited translations for other locales (marks them not machine-translated) */
-  translations?: Partial<Record<Locale, TranslationInput>>;
+  /** the post's text */
+  source: PostContentInput;
 };
 
 export type PublishInput = {
   id: string;
   /** ISO; omitted or in the past → publish now; future → schedule */
   publishAt?: string;
-  /** default true: (re)translate missing/stale locales with Microsoft Translator before publishing */
-  translate?: boolean;
 };
 
 export type UnsplashPhoto = {
