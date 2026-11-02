@@ -30,7 +30,6 @@ import {
   History,
   ExternalLink,
 } from "lucide-react";
-import { clsx } from "clsx";
 import type { CoverImage } from "@/db/schema";
 import type { PostContentInput, PostEditorData, SavePostInput } from "@/lib/admin/types";
 import { siteLocale } from "@/lib/i18n/config";

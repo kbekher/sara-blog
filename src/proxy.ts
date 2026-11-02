@@ -19,10 +19,6 @@ import {
 import { signSessionToken, verifySessionToken } from "@/lib/auth/jwt";
 
 export async function proxy(request: NextRequest) {
-  return handleAdmin(request);
-}
-
-async function handleAdmin(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   const token = request.cookies.get(SESSION_COOKIE)?.value;
   const session = await verifySessionToken(token);

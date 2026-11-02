@@ -46,9 +46,22 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     serverActions: {
-      // Long posts are saved as Tiptap JSON (+ hand-edited translations) in one action call.
+      // Long posts are saved as Tiptap JSON in one action call.
       bodySizeLimit: "4mb",
     },
+    // app/global-not-found.tsx: 404 for unmatched URLs (two root layouts — (site) and admin — and no app/layout.tsx).
+    globalNotFound: true,
+  },
+  /**
+   * The site used to live under /ru, /uk and /en. It is Russian-only now (readers use browser translation),
+   * so old links and search results are permanently redirected to the unprefixed URLs:
+   * /ru → /, /en/posts/x → /posts/x, /uk/rss.xml → /rss.xml, … (query strings are kept).
+   */
+  async redirects() {
+    return [
+      { source: "/:lang(ru|uk|en)", destination: "/", permanent: true },
+      { source: "/:lang(ru|uk|en)/:path*", destination: "/:path*", permanent: true },
+    ];
   },
   async headers() {
     return [

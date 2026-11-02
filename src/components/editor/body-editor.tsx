@@ -124,8 +124,7 @@ export default function BodyEditor({
       SlashCommand,
       EditorUi,
     ];
-    // The parent remounts the editor (via `key`) when it replaces the content; extensions are intentionally created once.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Extensions are created once; the parent remounts the editor (via `key`) when it replaces the content.
   }, []);
 
   const editor = useEditor({

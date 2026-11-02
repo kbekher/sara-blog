@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { getClientIp, isSameOrigin } from "@/lib/auth/request";
-import { locales } from "@/lib/i18n/config";
 import { NewsletterError, subscribe } from "@/lib/services/brevo";
 import { createRateLimiter } from "@/lib/services/rate-limit";
 
@@ -9,7 +8,8 @@ const limiter = createRateLimiter({ limit: 5, windowMs: 10 * 60 * 1000 });
 
 const schema = z.object({
   email: z.string().trim().toLowerCase().max(254).pipe(z.email()),
-  locale: z.enum(locales).catch("ru"),
+  /** Ignored (the site is Russian-only); still accepted so older cached pages that send it keep working. */
+  locale: z.unknown().optional(),
   /** honeypot — real users never fill it */
   company: z.string().max(200).optional(),
 });
@@ -18,7 +18,7 @@ function error(status: number, message: string, headers?: HeadersInit) {
   return Response.json({ ok: false, error: message }, { status, headers });
 }
 
-/** POST /api/newsletter { email, locale, company } — public signup → Brevo. */
+/** POST /api/newsletter { email, company, locale? } — public signup → Brevo. */
 export async function POST(request: Request): Promise<Response> {
   // Browsers always send Origin on cross-site POSTs; reject other sites embedding our form.
   if (request.headers.has("origin") && !isSameOrigin(request)) return error(403, "Forbidden");
@@ -30,13 +30,13 @@ export async function POST(request: Request): Promise<Response> {
 
   const parsed = schema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return error(400, "Invalid email address.");
-  const { email, locale, company } = parsed.data;
+  const { email, company } = parsed.data;
 
   // Bot filled the honeypot: pretend success, do nothing.
   if (company?.trim()) return Response.json({ ok: true, doubleOptIn: true });
 
   try {
-    const { doubleOptIn } = await subscribe(email, locale);
+    const { doubleOptIn } = await subscribe(email);
     return Response.json({ ok: true, doubleOptIn });
   } catch (e) {
     if (e instanceof NewsletterError) {

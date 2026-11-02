@@ -1,5 +1,5 @@
 import "server-only";
-import type { Locale } from "@/lib/i18n/config";
+import { siteLocale } from "@/lib/i18n/config";
 import { site } from "@/lib/site";
 
 const API = "https://api.brevo.com/v3";
@@ -41,17 +41,17 @@ async function post(path: string, apiKey: string, payload: unknown): Promise<{ o
  * Subscribes an email to the Brevo list. With BREVO_DOI_TEMPLATE_ID set, Brevo first sends a double opt-in
  * confirmation email (recommended for GDPR); otherwise the contact is added directly.
  * An already-existing contact is treated as success (no leak about who is subscribed).
- * The LANGUAGE contact attribute is sent when possible; if it doesn't exist in the Brevo account,
- * the request is retried once without attributes.
+ * The LANGUAGE contact attribute ("RU" — the site is Russian-only) is sent when possible; if it doesn't exist in
+ * the Brevo account, the request is retried once without attributes.
  */
-export async function subscribe(email: string, locale: Locale): Promise<{ doubleOptIn: boolean }> {
+export async function subscribe(email: string): Promise<{ doubleOptIn: boolean }> {
   const apiKey = process.env.BREVO_API_KEY?.trim();
   const listId = Number(process.env.BREVO_LIST_ID);
   if (!apiKey || !(listId > 0)) throw new NewsletterError(503, "not_configured");
 
   const templateId = Number(process.env.BREVO_DOI_TEMPLATE_ID);
   const doubleOptIn = templateId > 0;
-  const redirectionUrl = process.env.BREVO_DOI_REDIRECT_URL?.trim() || `${site.url.replace(/\/+$/, "")}/${locale}`;
+  const redirectionUrl = process.env.BREVO_DOI_REDIRECT_URL?.trim() || `${site.url.replace(/\/+$/, "")}/`;
 
   const build = (attributes?: Record<string, string>) =>
     doubleOptIn
@@ -59,7 +59,7 @@ export async function subscribe(email: string, locale: Locale): Promise<{ double
       : { email, listIds: [listId], updateEnabled: true, ...(attributes && { attributes }) };
   const path = doubleOptIn ? "/contacts/doubleOptinConfirmation" : "/contacts";
 
-  let result = await post(path, apiKey, build({ LANGUAGE: locale.toUpperCase() }));
+  let result = await post(path, apiKey, build({ LANGUAGE: siteLocale.toUpperCase() }));
   if (!result.ok && result.status === 400 && /attribute/i.test(result.body.message ?? "")) {
     result = await post(path, apiKey, build());
   }
