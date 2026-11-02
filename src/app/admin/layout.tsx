@@ -4,9 +4,8 @@ import { sourceSerif } from "../fonts";
 import { ThemeScript } from "@/components/theme-script";
 import { ToastProvider } from "@/components/admin/toast";
 import { AdminTopBar } from "@/components/admin/admin-top-bar";
+// globals.css also pulls in src/styles/prose.css (`.prose-sara`), which the editor body uses for true WYSIWYG.
 import "../globals.css";
-// Public article typography (owned by the public-site agent) — the editor body uses `.prose-sara` for true WYSIWYG.
-import "@/styles/prose.css";
 import "@/components/admin/admin.css";
 
 export const metadata: Metadata = {

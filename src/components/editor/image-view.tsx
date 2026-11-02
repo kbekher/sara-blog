@@ -8,6 +8,7 @@ import { NodeViewWrapper, ReactNodeViewRenderer, type ReactNodeViewProps } from 
 import { Trash2, TextCursorInput, AlertTriangle } from "lucide-react";
 import { clsx } from "clsx";
 import { FigureImage } from "@/lib/content/extensions";
+import { takePendingAlt } from "./extensions/image-upload";
 
 function ImageView({ node, updateAttributes, deleteNode, selected, editor, getPos }: ReactNodeViewProps) {
   const src = node.attrs.src as string;
@@ -22,8 +23,7 @@ function ImageView({ node, updateAttributes, deleteNode, selected, editor, getPo
 
   // Ask for alt text right after an upload.
   useEffect(() => {
-    if (editor.storage.imageUpload?.pendingAltSrc === src) {
-      editor.storage.imageUpload.pendingAltSrc = null;
+    if (takePendingAlt(editor, src)) {
       const t = setTimeout(() => {
         setAltDraft(alt);
         setAltOpen(true);

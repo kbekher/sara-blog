@@ -58,9 +58,16 @@ function placeholderElement(previewUrl: string): { element: HTMLElement; setProg
   };
 }
 
+/** Images are blocks: place them before an empty paragraph or after the current text block. */
+function blockBoundary(editor: Editor, pos: number): number {
+  const $pos = editor.state.doc.resolve(Math.min(pos, editor.state.doc.content.size));
+  if (!$pos.parent.isTextblock || $pos.depth === 0) return $pos.pos;
+  return $pos.parent.content.size === 0 ? $pos.before() : $pos.after();
+}
+
 /** Upload files and insert them as images at `pos` (or at the current selection). */
 export function insertImageFiles(editor: Editor, files: File[], pos: number | null, onError: (m: string) => void) {
-  let insertAt = pos ?? editor.state.selection.from;
+  const insertAt = blockBoundary(editor, pos ?? editor.state.selection.from);
   for (const file of files) {
     const problem = validateImage(file);
     if (problem) {
@@ -98,8 +105,15 @@ export function insertImageFiles(editor: Editor, files: File[], pos: number | nu
         // Keep the preview alive a moment so the swap to the real image doesn't flash.
         setTimeout(() => URL.revokeObjectURL(preview), 4000);
       });
-    insertAt = Math.min(insertAt, editor.state.doc.content.size);
   }
+}
+
+/** true (once) if the image with this src was just uploaded and should prompt for alt text. */
+export function takePendingAlt(editor: Editor, src: string): boolean {
+  const storage = editor.storage.imageUpload;
+  if (!storage || storage.pendingAltSrc !== src) return false;
+  storage.pendingAltSrc = null;
+  return true;
 }
 
 export const ImageUpload = Extension.create<ImageUploadOptions, { pendingAltSrc: string | null }>({

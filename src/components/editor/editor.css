@@ -1,0 +1,591 @@
+/*
+ * Editor-only styles. The body itself uses `.prose-sara` (public article typography) for true WYSIWYG;
+ * this file adds only what an editing surface needs: placeholders, selection, menus, node views,
+ * LanguageTool underlines, upload placeholders, title/excerpt fields, cover area and focus mode.
+ */
+
+:root {
+  --editor-header-h: 3.5rem;
+  --editor-col: 44rem;
+}
+
+/* ── Layout ─────────────────────────────────────────── */
+.editor-column {
+  width: 100%;
+  max-width: var(--editor-col);
+  margin-inline: auto;
+  padding-inline: max(1.25rem, env(safe-area-inset-left)) max(1.25rem, env(safe-area-inset-right));
+}
+
+.editor-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  height: var(--editor-header-h);
+  background: var(--glass);
+  backdrop-filter: saturate(1.4) blur(18px);
+  -webkit-backdrop-filter: saturate(1.4) blur(18px);
+  border-bottom: 1px solid var(--border);
+  padding-top: env(safe-area-inset-top);
+  box-sizing: content-box;
+}
+
+.editor-toolbar-wrap {
+  position: sticky;
+  top: calc(var(--editor-header-h) + env(safe-area-inset-top));
+  z-index: 30;
+  margin-inline: -0.5rem;
+  padding-block: 0.375rem;
+  background: var(--glass);
+  backdrop-filter: saturate(1.4) blur(18px);
+  -webkit-backdrop-filter: saturate(1.4) blur(18px);
+  border-bottom: 1px solid transparent;
+  transition:
+    opacity 0.4s var(--ease-apple),
+    transform 0.4s var(--ease-apple);
+}
+
+.editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+  padding-inline: 0.5rem;
+}
+
+.editor-sep {
+  width: 1px;
+  height: 1.25rem;
+  margin-inline: 0.25rem;
+  flex-shrink: 0;
+  background: var(--border);
+}
+
+.editor-select {
+  height: 2.25rem;
+  flex-shrink: 0;
+  padding: 0 1.75rem 0 0.625rem;
+  border-radius: 0.625rem;
+  background-color: transparent;
+  color: var(--fg);
+  font-size: 1rem; /* ≥16px: no iOS zoom */
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--fg-subtle) 50%),
+    linear-gradient(135deg, var(--fg-subtle) 50%, transparent 50%);
+  background-position:
+    calc(100% - 0.875rem) 55%,
+    calc(100% - 0.5625rem) 55%;
+  background-size: 0.3125rem 0.3125rem;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+.editor-select:hover {
+  background-color: var(--surface-hover);
+}
+.editor-select option {
+  background: var(--bg-elevated);
+  color: var(--fg);
+}
+
+/* ── Title & excerpt ───────────────────────────────── */
+.editor-title,
+.editor-excerpt {
+  display: block;
+  width: 100%;
+  resize: none;
+  overflow: hidden;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  field-sizing: content;
+}
+.editor-title:focus,
+.editor-excerpt:focus {
+  outline: none;
+}
+.editor-title {
+  font-family: var(--font-serif);
+  font-size: clamp(2rem, 1.4rem + 2.6vw, 3rem);
+  font-weight: 600;
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  color: var(--fg-strong);
+  text-wrap: balance;
+  font-optical-sizing: auto;
+}
+.editor-excerpt {
+  margin-top: 0.875rem;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: clamp(1.125rem, 1rem + 0.5vw, 1.3125rem);
+  line-height: 1.5;
+  color: var(--fg-muted);
+}
+.editor-title::placeholder,
+.editor-excerpt::placeholder {
+  color: var(--fg-subtle);
+  opacity: 0.8;
+}
+
+/* ── Body ──────────────────────────────────────────── */
+.editor-content {
+  padding-top: 1.75rem;
+  padding-bottom: 30vh;
+}
+.editor-body {
+  min-height: 40vh;
+  outline: none;
+  caret-color: var(--accent);
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  white-space: break-spaces;
+  -webkit-font-variant-ligatures: none;
+  font-variant-ligatures: none;
+}
+.editor-body:focus-visible {
+  outline: none;
+}
+/* Placeholder (Tiptap Placeholder extension) */
+.editor-body .is-empty::before,
+.editor-body.is-editor-empty > p:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: var(--fg-subtle);
+  font-style: normal;
+}
+.editor-body ::selection {
+  background: var(--selection);
+}
+.editor-body .ProseMirror-selectednode,
+.editor-body hr.ProseMirror-selectednode {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+.editor-body .ProseMirror-gapcursor::after {
+  border-top-color: var(--accent);
+}
+.editor-dropcursor {
+  background: var(--accent);
+  border-radius: 2px;
+}
+.editor-body a {
+  cursor: text;
+}
+
+/* ── Images in the body ────────────────────────────── */
+/* Spacing & breakout width come from `.prose-sara > figure` (public styles). */
+.editor-figure {
+  position: relative;
+}
+.editor-figure-media {
+  position: relative;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: var(--surface);
+}
+.editor-figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0;
+  border-radius: 0.75rem;
+}
+.editor-figure.is-selected .editor-figure-media {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.editor-figure-tools {
+  position: absolute;
+  top: 0.625rem;
+  right: 0.625rem;
+  display: flex;
+  gap: 0.375rem;
+  opacity: 0;
+  transition: opacity 0.2s var(--ease-apple);
+}
+.editor-figure:hover .editor-figure-tools,
+.editor-figure.is-selected .editor-figure-tools,
+.editor-figure-tools:focus-within {
+  opacity: 1;
+}
+@media (hover: none) {
+  .editor-figure-tools {
+    opacity: 1;
+  }
+}
+.editor-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  height: 1.875rem;
+  padding: 0 0.625rem;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.62);
+  color: #fff;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.editor-chip:hover {
+  background: rgb(0 0 0 / 0.8);
+}
+.editor-chip-warn {
+  background: color-mix(in srgb, var(--tc-orange) 80%, black);
+}
+.editor-alt-panel {
+  margin-top: 0.75rem;
+  padding: 0.875rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.875rem;
+  background: var(--bg-elevated);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+}
+.editor-caption {
+  display: block;
+  width: 100%;
+  margin-top: 0.625rem;
+  border: 0;
+  background: transparent;
+  text-align: center;
+  font-family: var(--font-sans);
+  font-size: 1rem; /* ≥16px avoids iOS zoom; visually close to the public caption */
+  color: var(--fg-muted);
+}
+.editor-caption:focus {
+  outline: none;
+  color: var(--fg);
+}
+.editor-caption::placeholder {
+  color: var(--fg-subtle);
+  opacity: 0;
+  transition: opacity 0.2s var(--ease-apple);
+}
+.editor-figure:hover .editor-caption::placeholder,
+.editor-figure.is-selected .editor-caption::placeholder,
+.editor-caption:focus::placeholder {
+  opacity: 1;
+}
+
+/* Upload placeholder widget */
+.editor-upload {
+  position: relative;
+  margin-block: 2em;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: var(--surface);
+}
+.editor-upload img {
+  display: block;
+  width: 100%;
+  max-height: 28rem;
+  object-fit: cover;
+  opacity: 0.45;
+  filter: saturate(0.6) blur(1px);
+  margin: 0;
+}
+.editor-upload-bar {
+  position: absolute;
+  inset-inline: 1rem;
+  bottom: 2.75rem;
+  height: 4px;
+  border-radius: 99px;
+  background: rgb(255 255 255 / 0.18);
+  overflow: hidden;
+}
+.editor-upload-bar span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 0.3s var(--ease-apple);
+}
+.editor-upload figcaption {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0.875rem;
+  text-align: center;
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  color: var(--fg-strong);
+}
+
+/* ── LanguageTool underlines ───────────────────────── */
+.lt-mark {
+  text-decoration-line: underline;
+  text-decoration-style: wavy;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.22em;
+  text-decoration-skip-ink: none;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: background-color 0.15s var(--ease-apple);
+}
+.lt-mark:hover {
+  background: var(--surface-hover);
+}
+.lt-spelling {
+  text-decoration-color: var(--tc-red);
+}
+.lt-grammar {
+  text-decoration-color: var(--tc-orange);
+}
+.lt-style {
+  text-decoration-color: var(--tc-blue);
+}
+.lt-kind {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.lt-kind-spelling {
+  color: var(--tc-red);
+}
+.lt-kind-grammar {
+  color: var(--tc-orange);
+}
+.lt-kind-style {
+  color: var(--tc-blue);
+}
+.lt-replacement {
+  padding: 0.3125rem 0.75rem;
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--fg-strong);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  transition: background-color 0.15s var(--ease-apple);
+}
+.lt-replacement:hover,
+.lt-replacement:focus-visible {
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+/* ── Floating UI: bubble, popovers, menus ──────────── */
+.editor-bubble,
+.editor-popover {
+  z-index: 60;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.875rem;
+  background: color-mix(in srgb, var(--bg-elevated) 94%, transparent);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: var(--fg);
+  font-family: var(--font-sans);
+}
+.editor-bubble {
+  padding: 0.25rem;
+  animation: editor-pop 0.22s var(--ease-out-expo);
+}
+.editor-popover {
+  animation: editor-pop 0.22s var(--ease-out-expo);
+}
+@keyframes editor-pop {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+}
+.editor-menu {
+  padding: 0.375rem;
+}
+.editor-menu-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.4375rem 0.5rem;
+  border-radius: 0.625rem;
+  transition: background-color 0.12s var(--ease-apple);
+}
+.editor-menu-item:hover,
+.editor-menu-item.is-active,
+.editor-menu-item:focus-visible {
+  background: var(--surface-hover);
+}
+.editor-menu-icon {
+  display: inline-flex;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg-muted);
+}
+.editor-link-input {
+  width: 100%;
+  min-width: 0;
+  height: 2.25rem;
+  padding: 0 0.625rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: var(--bg-sunken);
+  color: var(--fg);
+  font-size: 1rem;
+}
+.editor-link-input:focus {
+  outline: 2px solid color-mix(in srgb, var(--accent) 50%, transparent);
+}
+.editor-link-input[aria-invalid="true"] {
+  outline: 2px solid color-mix(in srgb, var(--tc-red) 60%, transparent);
+}
+.editor-swatch {
+  display: inline-flex;
+  width: 2.25rem;
+  height: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.625rem;
+  border: 1px solid var(--border);
+  transition:
+    border-color 0.15s var(--ease-apple),
+    transform 0.15s var(--ease-apple);
+}
+.editor-swatch:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+}
+.editor-swatch.is-active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.editor-swatch [data-highlight] {
+  padding: 0;
+}
+
+/* "+" on empty lines */
+.editor-plus-wrap {
+  z-index: 20;
+}
+.editor-plus {
+  display: inline-flex;
+  width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  color: var(--fg-subtle);
+  background: var(--bg);
+  transition:
+    transform 0.3s var(--ease-out-expo),
+    color 0.2s var(--ease-apple),
+    border-color 0.2s var(--ease-apple);
+}
+.editor-plus:hover,
+.editor-plus.is-open {
+  color: var(--fg-strong);
+  border-color: var(--fg-subtle);
+}
+.editor-plus.is-open {
+  transform: rotate(45deg);
+}
+@media (max-width: 720px) {
+  /* No left gutter on phones: the toolbar & "/" do the job. */
+  .editor-plus-wrap {
+    display: none;
+  }
+}
+
+/* ── Status bar ────────────────────────────────────── */
+.editor-statusbar {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-inline: -0.5rem;
+  padding: 0.5rem 0.5rem max(0.5rem, env(safe-area-inset-bottom));
+  font-size: 0.8125rem;
+  color: var(--fg-subtle);
+  background: linear-gradient(to top, var(--bg) 60%, transparent);
+  font-variant-numeric: tabular-nums;
+  transition: opacity 0.4s var(--ease-apple);
+}
+
+/* ── Cover ─────────────────────────────────────────── */
+.editor-cover {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  background: var(--surface);
+}
+.editor-cover img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 70vh;
+  object-fit: cover;
+}
+.editor-cover-actions {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: flex;
+  gap: 0.375rem;
+  opacity: 0;
+  transition: opacity 0.25s var(--ease-apple);
+}
+.editor-cover:hover .editor-cover-actions,
+.editor-cover:focus-within .editor-cover-actions {
+  opacity: 1;
+}
+@media (hover: none) {
+  .editor-cover-actions {
+    opacity: 1;
+  }
+}
+
+/* Unsplash grid */
+.unsplash-credit {
+  opacity: 0;
+  transition: opacity 0.25s var(--ease-apple);
+}
+.unsplash-tile:hover .unsplash-credit,
+.unsplash-tile:focus-within .unsplash-credit {
+  opacity: 1;
+}
+@media (hover: none) {
+  .unsplash-credit {
+    opacity: 1;
+  }
+}
+
+/* ── Focus mode: chrome fades while typing, returns on mouse move ── */
+[data-typing="true"] [data-chrome] {
+  opacity: 0;
+  pointer-events: none;
+}
+[data-typing="true"] .editor-toolbar-wrap {
+  transform: translateY(-4px);
+}
+[data-typing="true"] .editor-header {
+  opacity: 0.08;
+  transition: opacity 0.5s var(--ease-apple);
+}
+.editor-header {
+  transition: opacity 0.3s var(--ease-apple);
+}
+@media (hover: none) {
+  /* Touch devices: no mouse to bring the chrome back — keep it visible. */
+  [data-typing="true"] [data-chrome] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  [data-typing="true"] .editor-header {
+    opacity: 1;
+  }
+}

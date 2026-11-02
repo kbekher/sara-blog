@@ -12,6 +12,7 @@ import { Node as PMNode, type Schema } from "@tiptap/pm/model";
 import sanitize from "sanitize-html";
 import type { Locale } from "@/lib/i18n/config";
 import { getExtensions, isAllowedHref } from "./extensions";
+import { readingMinutesFor } from "./stats";
 import { TEXT_COLORS, type RenderedContent } from "./types";
 
 let cachedExtensions: ReturnType<typeof getExtensions> | null = null;
@@ -181,25 +182,10 @@ export function extractPlainText(doc: JSONContent): string {
   return blocks.join(BLOCK_SEPARATOR);
 }
 
-/** Words per minute for comfortable reading; Cyrillic words are longer on average. */
-const WPM: Record<Locale, number> = { ru: 180, uk: 180, en: 230 };
-/** Extra seconds a reader spends on each image. */
-const SECONDS_PER_IMAGE = 10;
-
-export function countWords(text: string): number {
-  const matches = text.match(/[\p{L}\p{N}]+(?:[’'\-][\p{L}\p{N}]+)*/gu);
-  return matches ? matches.length : 0;
-}
-
 function countImages(doc: JSONContent): number {
   let n = doc.type === "image" ? 1 : 0;
   for (const child of doc.content ?? []) n += countImages(child);
   return n;
-}
-
-export function readingMinutesFor(plainText: string, locale: Locale = "ru", images = 0): number {
-  const minutes = countWords(plainText) / WPM[locale] + (images * SECONDS_PER_IMAGE) / 60;
-  return Math.max(1, Math.round(minutes));
 }
 
 /** Everything the save action needs for one translation: normalized JSON, sanitized HTML, plain text, reading time. */

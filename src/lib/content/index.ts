@@ -11,9 +11,10 @@
  *  - typography helpers (`typographText`, …) — pure string functions
  *
  * Client components should import from "@/lib/content/extensions", "@/lib/content/types" or
- * "@/lib/content/typography" directly to avoid pulling sanitize-html into the browser bundle.
+ * "@/lib/content/typography" | "/stats" directly to avoid pulling sanitize-html into the browser bundle.
  */
 export * from "./types";
 export * from "./extensions";
 export * from "./pipeline";
 export * from "./typography";
+export * from "./stats";

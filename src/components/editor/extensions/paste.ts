@@ -43,7 +43,7 @@ function wrapChildren(el: Element, tag: string) {
 }
 
 function isBlankText(text: string) {
-  return text.replace(/[\s ​]/g, "") === "";
+  return text.replace(/[\s\u00A0​]/g, "") === "";
 }
 
 /** Convert Word's fake lists (<p class="MsoListParagraph…"> with a bullet span) into real <ul>/<ol>. */
@@ -141,7 +141,7 @@ export function cleanPastedHtml(html: string): string {
   const textWalker = doc.createTreeWalker(body, NodeFilter.SHOW_TEXT);
   while (textWalker.nextNode()) {
     const node = textWalker.currentNode as Text;
-    const value = node.data.replace(/[  ]{2,}/g, " ").replace(/​/g, "");
+    const value = node.data.replace(/[ \u00A0]{2,}/g, " ").replace(/​/g, "");
     if (value !== node.data) node.data = value;
   }
 
@@ -163,7 +163,7 @@ export function cleanPastedHtml(html: string): string {
 
 /** Plain text → slice of paragraphs (open on both sides so it merges into the current paragraph). */
 export function plainTextToSlice(text: string, schema: Schema): Slice {
-  const normalized = text.replace(/\r\n?/g, "\n").replace(/ {2,}/g, " ").trim();
+  const normalized = text.replace(/\r\n?/g, "\n").replace(/\u00A0{2,}/g, " ").trim();
   const chunks = /\n[ \t]*\n/.test(normalized)
     ? normalized.split(/\n(?:[ \t]*\n)+/)
     : normalized.split("\n");
