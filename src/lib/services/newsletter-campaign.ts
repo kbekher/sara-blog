@@ -354,18 +354,26 @@ export async function scheduleOrSendCampaign({ post, sendAt }: { post: CampaignP
   const title = post.title.trim();
   const excerpt = post.excerpt.trim();
 
-  const created = await brevo(config, "POST", "/emailCampaigns", {
+  // Essentials only. (Extras such as `tag` are paid-plan features: on the free plan Brevo rejects the whole
+  // request with HTTP 405 "You are not allowed to avail tag option for your campaign".)
+  const essentials = {
     name: `Новая запись: ${title.slice(0, 150)} (${post.slug})`,
     subject: title,
-    ...(excerpt && { previewText: excerpt.slice(0, 300) }),
     sender: config.sender,
     htmlContent: renderPostEmail(post),
     recipients: { listIds: [config.listId] },
-    inlineImageActivation: false,
-    mirrorActive: true,
-    tag: "new-post",
     ...(scheduled && { scheduledAt: sendAt.toISOString() }),
-  });
+  };
+  const extras = { ...(excerpt && { previewText: excerpt.slice(0, 300) }), inlineImageActivation: false, mirrorActive: true };
+  let created: BrevoResponse;
+  try {
+    created = await brevo(config, "POST", "/emailCampaigns", { ...essentials, ...extras });
+  } catch (error) {
+    // Plan restriction on an optional field → retry once with the bare minimum.
+    if (!(error instanceof CampaignError && (error.status === 405 || error.status === 403))) throw error;
+    console.warn("[newsletter] campaign create refused with extras; retrying with essentials only", error.detail);
+    created = await brevo(config, "POST", "/emailCampaigns", essentials);
+  }
   const id = Number(created.body.id);
   if (!Number.isInteger(id) || id <= 0) {
     console.error("[newsletter] createEmailCampaign returned no id", created.body);
