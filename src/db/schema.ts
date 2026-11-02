@@ -45,7 +45,7 @@ export const posts = pgTable(
   "posts",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    /** URL slug, shared by all locales: /{lang}/posts/{slug}. Latin, kebab-case. */
+    /** URL slug: /posts/{slug}. Latin, kebab-case. */
     slug: text("slug").notNull().unique(),
     status: postStatus("status").notNull().default("draft"),
     sourceLocale: localeEnum("source_locale").notNull().default("ru"),
@@ -58,7 +58,10 @@ export const posts = pgTable(
   (t) => [index("posts_status_published_idx").on(t.status, t.publishedAt)],
 );
 
-/** One row per (post, locale). The source locale row is authored; others are machine-translated (Microsoft Translator) and editable. */
+/**
+ * One row per (post, locale). The site is Russian-only now: only the `ru` row is written and read. The table name
+ * and the per-locale shape are kept from the multilingual era (no migration); leftover uk/en rows are ignored.
+ */
 export const postTranslations = pgTable(
   "post_translations",
   {
@@ -76,16 +79,16 @@ export const postTranslations = pgTable(
     /** Plain text for search & reading time. */
     plainText: text("plain_text").notNull().default(""),
     readingMinutes: integer("reading_minutes").notNull().default(1),
-    /** true = produced by machine translation and not hand-edited since. */
+    /** Legacy (multilingual era): true = produced by machine translation. Always false for new rows. */
     isMachineTranslated: boolean("is_machine_translated").notNull().default(false),
-    /** Hash of the source translation this was produced from; used to detect stale translations. */
+    /** Legacy (multilingual era): hash of the source text a translation was produced from. Unused now. */
     sourceHash: text("source_hash"),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.postId, t.locale] })],
 );
 
-/** Tags: slug is Latin; display names are per-locale (auto-translated, editable). */
+/** Tags: slug is Latin; display name in `names.ru` (new tags store the same name under all three keys). */
 export const tags = pgTable("tags", {
   id: uuid("id").primaryKey().defaultRandom(),
   slug: text("slug").notNull().unique(),

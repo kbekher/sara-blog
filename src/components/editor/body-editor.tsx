@@ -76,9 +76,6 @@ export default function BodyEditor({
   title,
   saveStatus,
 }: BodyEditorProps) {
-  // Opt out of the React Compiler (it used to skip this component anyway): the extension list is deliberately
-  // created once and closes over refs that Tiptap reads from event handlers, which the compiler cannot model.
-  "use no memo";
   const toast = useToast();
   const [ltEnabled, setLtEnabled] = useState(() => readLanguageToolEnabled());
   const [ltStatus, setLtStatus] = useState<LTStatus>({ state: "off" });
@@ -95,6 +92,9 @@ export default function BodyEditor({
     cb.current = { onChange, onSaveShortcut, onBlur, toast };
   }, [onChange, onSaveShortcut, onBlur, toast]);
 
+  // Created once on purpose (Tiptap extensions must stay stable); the parent remounts the editor via `key` when it
+  // replaces the content. The compiler can't keep this memo because the handlers read refs at event time.
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const extensions = useMemo(() => {
     const onError = (message: string) => cb.current.toast.error("Изображение не добавлено", { description: message });
     return [
@@ -127,7 +127,6 @@ export default function BodyEditor({
       SlashCommand,
       EditorUi,
     ];
-    // Extensions are created once; the parent remounts the editor (via `key`) when it replaces the content.
   }, []);
 
   const editor = useEditor({

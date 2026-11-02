@@ -11,14 +11,13 @@ type Props = {
   onEnter: () => void;
   onBlur?: () => void;
   variant: "title" | "excerpt";
-  lang: string;
   placeholder: string;
   label: string;
   maxLength?: number;
 };
 
 export const TitleField = forwardRef<HTMLTextAreaElement, Props>(function TitleField(
-  { value, onChange, onEnter, onBlur, variant, lang, placeholder, label, maxLength },
+  { value, onChange, onEnter, onBlur, variant, placeholder, label, maxLength },
   forwarded,
 ) {
   const ref = useRef<HTMLTextAreaElement>(null);
@@ -44,7 +43,6 @@ export const TitleField = forwardRef<HTMLTextAreaElement, Props>(function TitleF
       ref={ref}
       rows={1}
       value={value}
-      lang={lang}
       spellCheck
       autoCapitalize="sentences"
       maxLength={maxLength}

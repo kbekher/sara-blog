@@ -639,7 +639,6 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
 
         <TitleField
           variant="title"
-          lang={siteLocale}
           value={title}
           label="Заголовок"
           placeholder="Заголовок"
@@ -654,7 +653,6 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
         <TitleField
           ref={excerptRef}
           variant="excerpt"
-          lang={siteLocale}
           value={draft.excerpt}
           label="Подзаголовок"
           placeholder="Подзаголовок — одна-две фразы о чём эта история"
@@ -724,7 +722,7 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
 
       <Dialog open={!!preview} onClose={() => setPreview(null)} title="Предпросмотр" size="lg" bodyClassName="px-5 sm:px-10">
         {preview ? (
-          <article lang={siteLocale} className="mx-auto max-w-[44rem] pb-10">
+          <article className="mx-auto max-w-[44rem] pb-10">
             {data.cover ? (
               // eslint-disable-next-line @next/next/no-img-element -- preview of an arbitrary remote cover
               <img src={data.cover.url} alt={data.cover.alt} className="mb-8 w-full rounded-2xl" />
