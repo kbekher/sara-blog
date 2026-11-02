@@ -24,15 +24,16 @@ The blog and author names are localized — «Блог Сары» (ru), «Бло
 Requirements: Node.js 20.9+ (22 recommended), a Neon (or any Postgres) database.
 
 ```bash
-npm install
+corepack enable    # once per machine: makes the pinned pnpm version available
+pnpm install
 cp .env.example .env.local        # then fill it in (see table below)
-npm run hash-password             # prints ADMIN_PASSWORD_HASH (prompts for the password)
-npm run db:migrate                # create tables
-npm run db:seed                   # optional: sample post "Привет, мир"
-npm run dev                       # http://localhost:3000  ·  admin: http://localhost:3000/admin
+pnpm hash-password             # prints ADMIN_PASSWORD_HASH (prompts for the password)
+pnpm db:migrate                # create tables
+pnpm db:seed                   # optional: sample post "Привет, мир"
+pnpm dev                       # http://localhost:3000  ·  admin: http://localhost:3000/admin
 ```
 
-Tip: once the project is linked to Vercel (`npx vercel link`), `npx vercel env pull .env.local` downloads all variables.
+Tip: once the project is linked to Vercel (`pnpm dlx vercel link`), `pnpm dlx vercel env pull .env.local` downloads all variables.
 
 ## Environment variables
 
@@ -42,7 +43,7 @@ Tip: once the project is linked to Vercel (`npx vercel link`), `npx vercel env p
 | `DATABASE_URL` | yes | Neon Postgres. Vercel → **Storage** → *Create Database* → **Neon** (Marketplace). Injected automatically into the project. |
 | `BLOB_READ_WRITE_TOKEN` | for uploads | Vercel → **Storage** → *Create* → **Blob** → connect to the project. Injected automatically. |
 | `ADMIN_EMAIL` | yes | Sara's login email. |
-| `ADMIN_PASSWORD_HASH` | yes | Output of `npm run hash-password`. **Use the `b64:` form** (see note below). |
+| `ADMIN_PASSWORD_HASH` | yes | Output of `pnpm hash-password`. **Use the `b64:` form** (see note below). |
 | `SESSION_SECRET` | yes | Random string ≥ 32 chars: `openssl rand -base64 32`. Changing it signs everyone out. |
 | `UNSPLASH_ACCESS_KEY` | for Unsplash covers | [unsplash.com/developers](https://unsplash.com/developers) → *Your apps* → *New Application* → **Access Key**. New apps are in *Demo* mode (**50 requests/hour**). Once the site is live, click *Apply for Production* (needs attribution + download tracking, both implemented) to get **5,000 requests/hour**. |
 | `DEEPL_API_KEY` | for translation | [deepl.com/pro-api](https://www.deepl.com/pro-api) → **DeepL API Free** (500,000 chars/month; key ends in `:fx`). Without it, posts publish in Russian only and the other languages fall back to Russian. |
@@ -59,22 +60,22 @@ Optional Brevo nicety: create a contact attribute `LANGUAGE` (text) to store eac
 
 bcrypt hashes look like `$2b$12$...`. Next.js expands `$VARIABLES` inside `.env` files — **even in quotes** — which silently corrupts the hash and makes login impossible. Therefore:
 
-- In `.env` / `.env.local`: use the **`b64:`** value printed by `npm run hash-password` (e.g. `ADMIN_PASSWORD_HASH=b64:JDJiJDEy...`). Escaping every `$` as `\$` also works.
+- In `.env` / `.env.local`: use the **`b64:`** value printed by `pnpm hash-password` (e.g. `ADMIN_PASSWORD_HASH=b64:JDJiJDEy...`). Escaping every `$` as `\$` also works.
 - In the Vercel dashboard values are not expanded, so either form works — `b64:` is simplest everywhere.
 
-To change the password: run `npm run hash-password` again, update the variable, redeploy. All existing sessions are invalidated automatically.
+To change the password: run `pnpm hash-password` again, update the variable, redeploy. All existing sessions are invalidated automatically.
 
 ## Database & migrations
 
 Schema: `src/db/schema.ts`. Migrations are SQL files in `drizzle/`.
 
 ```bash
-npm run db:generate   # after changing schema.ts → creates a new drizzle/NNNN_*.sql
-npm run db:migrate    # applies pending migrations (uses DATABASE_URL from .env.local / .env)
-npm run db:studio     # browse data
+pnpm db:generate   # after changing schema.ts → creates a new drizzle/NNNN_*.sql
+pnpm db:migrate    # applies pending migrations (uses DATABASE_URL from .env.local / .env)
+pnpm db:studio     # browse data
 ```
 
-**On Vercel, migrations run automatically on every deploy**: `vercel.json` sets the build command to `npm run vercel-build` = `tsx scripts/migrate.ts && next build`. If `DATABASE_URL` is missing, a **production** build fails loudly; preview/local builds just skip migrations with a warning.
+**On Vercel, migrations run automatically on every deploy**: `vercel.json` sets the build command to `pnpm vercel-build` = `tsx scripts/migrate.ts && next build`. If `DATABASE_URL` is missing, a **production** build fails loudly; preview/local builds just skip migrations with a warning.
 
 ## How Sara writes
 
@@ -91,7 +92,7 @@ npm run db:studio     # browse data
 2. In the project: **Storage → Create → Neon Postgres** and **Storage → Create → Blob**; connect both to all environments. This injects `DATABASE_URL` and `BLOB_READ_WRITE_TOKEN`.
    For Neon pick the **Free** plan, region **Frankfurt (aws-eu-central-1)**, and leave **Auth** and **Realtime** off (the blog has its own admin login). Server functions are pinned to `fra1` (Frankfurt) in `vercel.json` so they sit next to the database — if you choose another DB region, change `regions` there to match.
 3. **Settings → Environment Variables**: add `NEXT_PUBLIC_SITE_URL`, `ADMIN_EMAIL`, `ADMIN_PASSWORD_HASH`, `SESSION_SECRET`, and the optional service keys (Unsplash, DeepL, Brevo, LanguageTool).
-4. **Deploy.** The build runs migrations, then `next build`. Optionally seed once from your machine: `npx vercel env pull .env.local && npm run db:seed`.
+4. **Deploy.** The build runs migrations, then `next build`. Optionally seed once from your machine: `pnpm dlx vercel env pull .env.local && pnpm db:seed`.
 5. Add your domain under **Settings → Domains**, update `NEXT_PUBLIC_SITE_URL`, redeploy.
 6. Apply for Unsplash *Production* access once the site is public.
 
