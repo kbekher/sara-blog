@@ -26,6 +26,63 @@ function isUnsplash(src: string): boolean {
   }
 }
 
+/** Hosts allowed in next.config `images.remotePatterns` (served by the Next.js optimizer). */
+function isOptimizable(src: string): boolean {
+  try {
+    const { protocol, hostname } = new URL(src);
+    return (
+      protocol === "https:" &&
+      (hostname === "plus.unsplash.com" || hostname.endsWith(".public.blob.vercel-storage.com"))
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Any https image URL (e.g. one found in a post body) filling its positioned parent: Unsplash via the imgix loader,
+ * Blob uploads via the Next.js optimizer, anything else as a plain lazy <img> (unknown hosts are not in
+ * remotePatterns). The parent sets the size, so there is no layout shift.
+ */
+export function RemoteImage({
+  src,
+  alt = "",
+  sizes,
+  priority = false,
+  className,
+}: {
+  src: string;
+  alt?: string;
+  sizes: string;
+  priority?: boolean;
+  className?: string;
+}) {
+  if (isUnsplash(src) || isOptimizable(src)) {
+    return (
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        sizes={sizes}
+        loading={priority ? "eager" : "lazy"}
+        fetchPriority={priority ? "high" : undefined}
+        loader={isUnsplash(src) ? unsplashLoader : undefined}
+        className={clsx("object-cover", className)}
+      />
+    );
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- host outside images.remotePatterns
+    <img
+      src={src}
+      alt={alt}
+      loading={priority ? "eager" : "lazy"}
+      decoding="async"
+      className={clsx("absolute inset-0 size-full object-cover", className)}
+    />
+  );
+}
+
 /**
  * Cover image that fills its (positioned, aspect-ratio'd) parent. Shows `cover.color` as the placeholder
  * background, or `cover.blurDataURL` as a blur-up when available.

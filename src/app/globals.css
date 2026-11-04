@@ -3,7 +3,7 @@
 
 /*
  * ─────────────────────────────────────────────────────────────
- *  Sara's Blog — design tokens
+ *  Yuki Diaries — design tokens
  *  Dark is the default theme. Theme is set on <html data-theme="dark|light">
  *  by an inline script before paint (see src/components/theme-script.tsx),
  *  defaulting to the visitor's OS preference, then to dark.
@@ -36,6 +36,25 @@
   --code-bg: #211e1c;
   --shadow-lg: 0 24px 60px -20px rgb(0 0 0 / 0.7);
   --glass: rgb(27 25 24 / 0.72);
+
+  /* Two-tone home hero ("band"): the inverse surface of the page (light greige on the dark theme). */
+  --band: #d9d1c9;
+  --band-elevated: #e4ddd6;
+  --band-sunken: #cdc4bb;
+  --band-fg: #1c1a19; /* ~11.5:1 on --band */
+  --band-strong: #0f0e0d;
+  --band-muted: #5c544e; /* ~4.9:1 on --band */
+  --band-accent: #0a524c; /* ~6:1 on --band (focus rings, links) */
+  --band-accent-fg: #ffffff;
+  --band-line: 28 26 25; /* rgb channels of the band's ink, for hairlines/surfaces */
+  --band-glass: rgb(217 209 201 / 0.84);
+  --band-scheme: light;
+  /* Pill buttons on the page background */
+  --pill: #d9d1c9;
+  --pill-fg: #1c1a19; /* ~11.5:1 */
+  --pill-hover: #e8e1da;
+  /* Duotone photo tint (the theme accent; NOT remapped inside the band) */
+  --duo: #4fd1c5;
 
   /* Editor text-color palette (theme-aware; referenced via data-color="name") */
   --tc-gray: #a3a09b;
@@ -78,6 +97,22 @@
   --shadow-lg: 0 24px 60px -24px rgb(0 0 0 / 0.18);
   --glass: rgb(233 227 220 / 0.78);
 
+  --band: #1b1918;
+  --band-elevated: #252220;
+  --band-sunken: #141211;
+  --band-fg: #f7f3ef; /* ~15.9:1 on --band */
+  --band-strong: #ffffff;
+  --band-muted: #a39b93; /* ~6.4:1 on --band */
+  --band-accent: #4fd1c5; /* ~9.4:1 on --band */
+  --band-accent-fg: #1b1918;
+  --band-line: 247 243 239;
+  --band-glass: rgb(27 25 24 / 0.84);
+  --band-scheme: dark;
+  --pill: #1c1a19;
+  --pill-fg: #f4f0eb; /* ~15.3:1 */
+  --pill-hover: #34302d;
+  --duo: #0e6a63;
+
   --tc-gray: #6b6660;
   --tc-red: #c0392b;
   --tc-orange: #b35c12;
@@ -111,9 +146,15 @@
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-accent-fg: var(--accent-fg);
+  --color-pill: var(--pill);
+  --color-pill-fg: var(--pill-fg);
+  --color-pill-hover: var(--pill-hover);
+  --color-band: var(--band);
 
   /* Titles & italic/display text: Source Serif 4 (loaded via next/font in src/app/fonts.ts) */
   --font-serif: var(--font-source-serif), "Source Serif 4", Georgia, "Times New Roman", serif;
+  /* Brand wordmark only ("Yuki Diaries"): Inter Tight 700/800 */
+  --font-brand: var(--font-inter-tight), "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
   /* Body, UI, info text: native system stack */
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
   --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
@@ -201,3 +242,147 @@ mark,
 [data-highlight="blue"] { background: var(--hl-blue); }
 [data-highlight="purple"] { background: var(--hl-purple); }
 [data-highlight="pink"] { background: var(--hl-pink); }
+
+/* ─────────────────────────────────────────────────────────────
+ *  Public-site redesign: band, pills, labels, photo treatments
+ * ───────────────────────────────────────────────────────────── */
+
+/*
+ * The home hero "band" is the inverse surface of the page. `.on-band` remaps the design tokens inside it, so every
+ * token-based utility (text-fg-strong, bg-surface, border-border, focus rings…) just works on the band.
+ * The sticky site header takes the band colours while the home hero is under it: before hydration via :has()
+ * (the hero carries [data-hero-band]); after hydration HeaderFrame sets data-over-band="false" once scrolled past it.
+ */
+.on-band,
+html:has([data-hero-band]) .site-header:not([data-over-band="false"]) {
+  color-scheme: var(--band-scheme);
+  --bg: var(--band);
+  --bg-elevated: var(--band-elevated);
+  --bg-sunken: var(--band-sunken);
+  --fg: var(--band-fg);
+  --fg-strong: var(--band-strong);
+  --fg-muted: var(--band-muted);
+  --fg-subtle: var(--band-muted);
+  --surface: rgb(var(--band-line) / 0.06);
+  --surface-hover: rgb(var(--band-line) / 0.1);
+  --border: rgb(var(--band-line) / 0.12);
+  --border-strong: rgb(var(--band-line) / 0.2);
+  --accent: var(--band-accent);
+  --accent-hover: var(--band-accent);
+  --accent-fg: var(--band-accent-fg);
+  --selection: rgb(var(--band-line) / 0.16);
+  --glass: var(--band-glass);
+  /* Pills on the band are ink-on-greige inverted: band text colour as the fill */
+  --pill: var(--band-fg);
+  --pill-fg: var(--band);
+  --pill-hover: var(--band-strong);
+  color: var(--fg);
+}
+.on-band {
+  background-color: var(--bg);
+}
+
+/* Brand wordmark: heavy grotesk with tight tracking */
+.brand-wordmark {
+  font-family: var(--font-brand);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  font-feature-settings: "kern", "liga", "calt", "ss01";
+}
+
+/* Small tracked label: "НОЯБРЬ 2026 | Альпы, Швейцария". `.site-label-accent` marks the accent part. */
+.site-label {
+  font-size: 0.71875rem;
+  line-height: 1.5;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--fg-subtle);
+}
+.site-label-accent {
+  color: var(--accent);
+}
+
+/* Pill button / link (min 44px tap target on touch) */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0 1.25rem;
+  border-radius: 999px;
+  background: var(--pill);
+  color: var(--pill-fg);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  transition:
+    background-color 0.3s var(--ease-apple),
+    transform 0.3s var(--ease-apple);
+}
+@media (pointer: fine) {
+  .pill {
+    min-height: 2.5rem;
+  }
+}
+.pill:hover {
+  background: var(--pill-hover);
+}
+.pill:active {
+  transform: scale(0.98);
+}
+.pill-ghost {
+  background: transparent;
+  color: var(--fg);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+.pill-ghost:hover {
+  background: var(--surface-hover);
+}
+.pill-accent {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+.pill-accent:hover {
+  background: var(--accent-hover);
+}
+.pill .pill-arrow {
+  transition: transform 0.3s var(--ease-apple);
+}
+.pill:hover .pill-arrow,
+.group:hover .pill .pill-arrow {
+  transform: translateX(2px);
+}
+
+/*
+ * Duotone photo: the greyscale photo multiplied onto the theme accent (--duo, which is not remapped on the band).
+ * Usage: <div class="duotone relative overflow-hidden"><img …></div> (works with next/image `fill`).
+ */
+.duotone {
+  isolation: isolate;
+  background-color: var(--duo) !important;
+}
+.duotone img {
+  filter: grayscale(1) contrast(1.15) brightness(1.02);
+  mix-blend-mode: multiply;
+}
+
+/* Black & white photo that regains its colour on hover (desktop pointers only). */
+.bw img {
+  filter: grayscale(1) contrast(1.1);
+  transition: filter 0.7s var(--ease-apple);
+}
+@media (hover: hover) {
+  .bw:hover img,
+  .group:hover .bw img,
+  .group:focus-visible .bw img {
+    filter: none;
+  }
+}
+
+/* The home page renders its own newsletter strip; the footer copy is for every other page. */
+html:has([data-home-newsletter]) .footer-newsletter {
+  display: none;
+}

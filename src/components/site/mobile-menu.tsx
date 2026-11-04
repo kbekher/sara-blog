@@ -52,7 +52,7 @@ export function MobileMenu({
         aria-controls={panelId}
         aria-label={open ? labels.close : labels.open}
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex size-9 items-center justify-center rounded-full text-fg-muted transition-colors duration-300 ease-apple hover:bg-surface-hover hover:text-fg-strong"
+        className="inline-flex size-11 items-center justify-center rounded-full text-fg-muted transition-colors duration-300 ease-apple hover:bg-surface-hover hover:text-fg-strong md:size-10"
       >
         {open ? <X aria-hidden className="size-5" strokeWidth={1.75} /> : <Menu aria-hidden className="size-5" strokeWidth={1.75} />}
       </button>

@@ -75,6 +75,7 @@ type Data = {
   newsletterConfigured: boolean | undefined;
   cover: CoverImage | null;
   featured: boolean;
+  location: string;
   tagNames: string[];
   draft: Draft;
 };
@@ -117,6 +118,7 @@ function fromInitial(initial: PostEditorData | null): Data {
     newsletterConfigured: initial?.newsletterConfigured,
     cover: initial?.cover ?? null,
     featured: initial?.featured ?? false,
+    location: initial?.location ?? "",
     tagNames: initial?.tags.map((t) => t.name).filter(Boolean) ?? [],
     draft: source
       ? { title: source.title, excerpt: source.excerpt, contentJson: source.contentJson ?? EMPTY_DOC }
@@ -125,7 +127,7 @@ function fromInitial(initial: PostEditorData | null): Data {
 }
 
 function backupPayload(d: Data): LocalDraftData {
-  return { slug: d.slug, cover: d.cover, featured: d.featured, tagNames: d.tagNames, draft: d.draft };
+  return { slug: d.slug, cover: d.cover, featured: d.featured, location: d.location, tagNames: d.tagNames, draft: d.draft };
 }
 
 function samePayload(a: LocalDraftData, b: LocalDraftData): boolean {
@@ -202,6 +204,7 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
       slug: d.slug.trim() || undefined,
       cover: d.cover,
       featured: d.featured,
+      location: d.location.trim() || null,
       tagNames: d.tagNames,
       source,
     };
@@ -511,6 +514,7 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
       slug: b.slug,
       cover: b.cover,
       featured: b.featured,
+      location: b.location,
       tagNames: b.tagNames,
       draft: b.draft,
     }));
@@ -735,6 +739,11 @@ export function PostEditor({ initial }: { initial: PostEditorData | null }) {
         featured={data.featured}
         onFeaturedChange={(featured) => {
           update((cur) => ({ ...cur, featured }));
+          markDirty();
+        }}
+        location={data.location}
+        onLocationChange={(location) => {
+          update((cur) => ({ ...cur, location }));
           markDirty();
         }}
         excerpt={draft.excerpt}

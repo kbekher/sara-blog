@@ -1,140 +1,64 @@
 import Link from "next/link";
 import clsx from "clsx";
-import type { Dictionary } from "@/lib/i18n/get-dictionary";
+import { formatYearMonth, type Dictionary } from "@/lib/i18n/get-dictionary";
 import type { PostSummary } from "@/lib/posts/public-queries";
-import { CoverImage } from "./cover-image";
-import { PostMeta } from "./post-meta";
+import { PostImage } from "./post-image";
 
-/** Cover area of a card. Only rendered when the post has a cover: cover-less cards are text-only. */
-function CoverFrame({
-  cover,
-  sizes,
-  priority,
-  className,
-}: {
-  cover: NonNullable<PostSummary["cover"]>;
-  sizes: string;
-  priority?: boolean;
-  className?: string;
-}) {
+/**
+ * Archive card: greyscale image on top (colour on hover), italic serif title, excerpt, the date running vertically
+ * along the right edge and a small diagonal stroke bottom-left. Posts without images get a text-only card.
+ * The title link stretches over the text area (one tab stop, title = accessible name); the image links too.
+ */
+export function PostCard({ post }: { dict?: Dictionary; post: PostSummary }) {
+  const hasImage = post.images.length > 0;
   return (
-    <div
-      className={clsx("relative overflow-hidden bg-bg-sunken", className)}
-      // Dominant cover color as the loading placeholder (data, not a design color).
-      style={cover.color ? { backgroundColor: cover.color } : undefined}
-    >
-      <CoverImage
-        cover={cover}
-        sizes={sizes}
-        priority={priority}
-        className="transition-transform duration-700 ease-out-expo group-hover:scale-[1.02]"
-      />
-    </div>
-  );
-}
-
-/** Faint accent glow behind text-only (cover-less) cards, so they don't read as a flat empty box. */
-const TEXT_CARD_GLOW =
-  "bg-[radial-gradient(90%_120%_at_0%_0%,color-mix(in_oklab,var(--accent)_9%,transparent),transparent_65%)]";
-
-/** Large featured card on the home page. The whole card is one link (title is the accessible name). */
-export function HeroPostCard({ dict, post }: { dict: Dictionary; post: PostSummary }) {
-  const { cover } = post;
-  return (
-    <article className="group relative">
-      <Link
-        href={`/posts/${post.slug}`}
-        className={clsx(
-          "grid overflow-hidden rounded-[28px] border border-border bg-surface transition-[transform,border-color,background-color] duration-500 ease-out-expo hover:-translate-y-0.5 hover:border-border-strong hover:bg-surface-hover",
-          cover ? "md:grid-cols-[1.35fr_1fr]" : TEXT_CARD_GLOW,
-        )}
-      >
-        {cover && (
-          <CoverFrame
-            cover={cover}
-            priority
-            sizes="(min-width: 1152px) 640px, (min-width: 768px) 58vw, 100vw"
-            className="aspect-[16/10] md:aspect-auto md:min-h-[26rem]"
+    <article className="group relative flex h-full flex-col overflow-hidden rounded-[1.125rem] bg-bg-elevated transition-transform duration-500 ease-out-expo motion-safe:hover:-translate-y-0.5">
+      {hasImage && (
+        // Mouse shortcut only: the title link below is the card's single tab stop and accessible name.
+        <Link href={`/posts/${post.slug}`} tabIndex={-1} aria-hidden className="block shrink-0">
+          <PostImage
+            post={post}
+            tone="bw"
+            sizes="(min-width: 1024px) 380px, (min-width: 640px) 50vw, 100vw"
+            className="h-[190px] sm:h-[200px]"
           />
-        )}
-        <div
+        </Link>
+      )}
+      <div className={clsx("relative flex flex-1 flex-col pt-5.5 pr-12 pb-14 pl-6", hasImage ? "min-h-[10.5rem]" : "min-h-[15rem] pt-7")}>
+        <h3
           className={clsx(
-            "flex flex-col justify-end gap-4",
-            cover ? "p-6 sm:p-8 md:p-10" : "p-7 sm:p-10 md:px-14 md:py-16",
+            "font-serif leading-snug text-fg-strong italic text-balance",
+            hasImage ? "text-[1.3125rem]" : "text-[1.625rem] leading-tight",
           )}
         >
-          <p className="text-xs font-medium tracking-[0.14em] text-accent uppercase">{dict.home.featured}</p>
-          <h2
+          <Link
+            href={`/posts/${post.slug}`}
+            className="rounded-sm after:absolute after:inset-0 after:content-['']"
+          >
+            {post.title}
+          </Link>
+        </h3>
+        {post.excerpt && (
+          <p
             className={clsx(
-              "font-serif font-semibold text-fg-strong text-balance",
-              cover
-                ? "text-[2rem] leading-[1.12] tracking-[-0.015em] sm:text-[2.5rem]"
-                : "max-w-[22ch] text-[2.25rem] leading-[1.08] tracking-[-0.02em] sm:text-[3rem] md:text-[3.5rem]",
+              "mt-2 text-[0.8125rem] leading-relaxed text-fg-muted text-pretty",
+              hasImage ? "line-clamp-3" : "line-clamp-6",
             )}
           >
-            {post.title}
-          </h2>
-          {post.excerpt && (
-            <p
-                className={clsx(
-                "font-serif leading-relaxed text-fg-muted italic text-pretty",
-                cover ? "text-lg" : "max-w-[48ch] text-lg sm:text-xl",
-              )}
-            >
-              {post.excerpt}
-            </p>
-          )}
-          <PostMeta dict={dict} publishedAt={post.publishedAt} readingMinutes={post.readingMinutes} />
-        </div>
-      </Link>
-    </article>
-  );
-}
-
-/** Apple-like grid card: subtle lift on hover, cover zooms to 1.02. */
-export function PostCard({ dict, post }: { dict: Dictionary; post: PostSummary }) {
-  const { cover } = post;
-  return (
-    <article className="group h-full">
-      <Link
-        href={`/posts/${post.slug}`}
-        className={clsx(
-          "flex h-full flex-col overflow-hidden rounded-3xl border border-border bg-surface transition-[transform,border-color,background-color] duration-500 ease-out-expo hover:-translate-y-1 hover:border-border-strong hover:bg-surface-hover",
-          !cover && TEXT_CARD_GLOW,
+            {post.excerpt}
+          </p>
         )}
-      >
-        {cover && (
-          <CoverFrame
-            cover={cover}
-            sizes="(min-width: 1152px) 360px, (min-width: 640px) 50vw, 100vw"
-            className="aspect-[3/2]"
-          />
-        )}
-        <div className="flex flex-1 flex-col gap-3 p-5 sm:p-6">
-          <h3
-            className="font-serif text-[1.375rem] leading-snug font-semibold tracking-[-0.01em] text-fg-strong text-balance"
-          >
-            {post.title}
-          </h3>
-          {post.excerpt && (
-            <p
-                className={clsx(
-                "text-[0.9375rem] leading-relaxed text-fg-muted text-pretty",
-                // Text-only cards have room for a longer excerpt.
-                cover ? "line-clamp-3" : "line-clamp-5",
-              )}
-            >
-              {post.excerpt}
-            </p>
-          )}
-          <PostMeta
-            className="mt-auto pt-2"
-            dict={dict}
-            publishedAt={post.publishedAt}
-            readingMinutes={post.readingMinutes}
-          />
-        </div>
-      </Link>
+        <time
+          dateTime={post.publishedAt.toISOString()}
+          className="absolute top-5.5 right-4.5 text-[0.625rem] tracking-[0.2em] text-fg-subtle tabular-nums [writing-mode:vertical-rl]"
+        >
+          {formatYearMonth(post.publishedAt)}
+        </time>
+        <span
+          aria-hidden
+          className="absolute bottom-6 left-6 h-px w-5.5 -rotate-45 bg-fg-muted transition-[width] duration-500 ease-out-expo group-hover:w-8"
+        />
+      </div>
     </article>
   );
 }
@@ -149,7 +73,7 @@ export function PostGrid({
   className?: string;
 }) {
   return (
-    <ul className={clsx("grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6", className)}>
+    <ul className={clsx("grid gap-4 sm:grid-cols-2 lg:grid-cols-3", className)}>
       {posts.map((post, i) => (
         <li
           key={post.id}

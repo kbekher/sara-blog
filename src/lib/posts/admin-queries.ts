@@ -67,6 +67,7 @@ export function toEditorData(bundle: PostBundle): PostEditorData {
     status: post.status,
     cover: post.cover ?? null,
     featured: post.featured,
+    location: post.location ?? null,
     publishedAt: post.publishedAt?.toISOString() ?? null,
     updatedAt: post.updatedAt.toISOString(),
     tags: bundle.tags.map(toTagItem),

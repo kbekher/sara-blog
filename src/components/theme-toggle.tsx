@@ -89,7 +89,7 @@ export function ThemeToggle({ labels, className }: { labels: ThemeToggleLabels; 
       aria-label={ariaLabel}
       title={preference ? name : labels.label}
       className={clsx(
-        "inline-flex size-9 items-center justify-center rounded-full text-fg-muted transition-colors duration-300 ease-apple hover:bg-surface-hover hover:text-fg-strong",
+        "inline-flex size-11 items-center justify-center rounded-full text-fg-muted transition-colors duration-300 ease-apple hover:bg-surface-hover hover:text-fg-strong md:size-10",
         className,
       )}
     >

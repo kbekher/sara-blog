@@ -8,7 +8,9 @@
  * Colors and highlights are stored by NAME (see TEXT_COLORS) and rendered as `data-color` / `data-highlight`
  * attributes; the actual colors are theme-aware CSS variables in globals.css. No inline hex ever reaches HTML.
  */
-import { Mark, mergeAttributes, type AnyExtension } from "@tiptap/core";
+import { Mark, Node, mergeAttributes, type AnyExtension, type JSONContent } from "@tiptap/core";
+import { Plugin, PluginKey } from "@tiptap/pm/state";
+import { Fragment, type Node as PMNode } from "@tiptap/pm/model";
 import StarterKit from "@tiptap/starter-kit";
 import Image, { type ImageOptions } from "@tiptap/extension-image";
 import Highlight from "@tiptap/extension-highlight";
@@ -319,6 +321,115 @@ export const FigureImage = Image.extend<FigureImageOptions>({
   },
 }).configure({ inline: false, allowBase64: false, resize: false });
 
+/* ───────────────────────── Gallery (2–3 photos side by side) ───────────────────────── */
+
+export const GALLERY_MIN = 2;
+export const GALLERY_MAX = 3;
+export const GALLERY_CLASS = "gallery";
+
+/**
+ * Gallery block: 2–3 `image` nodes shown side by side.
+ *
+ * HTML contract (styled by the public site):
+ *   <div class="gallery" data-type="gallery" data-count="2|3"> <figure>…</figure> × 2–3 </div>
+ * The child <figure>s are exactly what FigureImage renders on its own (caption, credit).
+ * `data-count` is always derived from the children, never stored.
+ *
+ * Invariant (kept by the normalizer plugin below, in the editor): a gallery with fewer than 2 usable images
+ * collapses — 1 image → a plain image block, 0 → removed. `atom`: the editor treats it as one block
+ * (the images inside are edited through the gallery node view, never as text).
+ */
+export const Gallery = Node.create({
+  name: "gallery",
+  group: "block",
+  content: `image{${GALLERY_MIN},${GALLERY_MAX}}`,
+  atom: true,
+  draggable: true,
+  selectable: true,
+  isolating: true,
+  defining: true,
+
+  parseHTML() {
+    return [{ tag: 'div[data-type="gallery"]', priority: 70 }];
+  },
+
+  renderHTML({ node }) {
+    return [
+      "div",
+      { class: GALLERY_CLASS, "data-type": "gallery", "data-count": String(Math.min(GALLERY_MAX, Math.max(GALLERY_MIN, node.childCount))) },
+      0,
+    ];
+  },
+
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        key: new PluginKey("galleryNormalize"),
+        appendTransaction: (transactions, _old, state) => {
+          if (!transactions.some((tr) => tr.docChanged)) return null;
+          const fixes: { pos: number; node: PMNode }[] = [];
+          state.doc.descendants((node, pos) => {
+            if (node.type.name !== "gallery") return true;
+            const usable = galleryImages(node);
+            if (usable.length !== node.childCount || usable.length < GALLERY_MIN) fixes.push({ pos, node });
+            return false;
+          });
+          if (fixes.length === 0) return null;
+          const tr = state.tr;
+          // Back to front so earlier positions stay valid.
+          for (const { pos, node } of fixes.reverse()) {
+            const usable = galleryImages(node);
+            const end = pos + node.nodeSize;
+            if (usable.length === 0) tr.delete(pos, end);
+            else if (usable.length === 1) tr.replaceWith(pos, end, usable[0]!);
+            else tr.replaceWith(pos, end, node.type.create(node.attrs, Fragment.fromArray(usable.slice(0, GALLERY_MAX))));
+          }
+          return tr.docChanged ? tr : null;
+        },
+      }),
+    ];
+  },
+});
+
+/** Images of a gallery node that have a src (a parser may fill required content with empty images). */
+export function galleryImages(node: PMNode): PMNode[] {
+  const out: PMNode[] = [];
+  node.forEach((child) => {
+    if (child.type.name === "image" && typeof child.attrs.src === "string" && child.attrs.src) out.push(child);
+  });
+  return out;
+}
+
+/**
+ * Same invariant on JSON (used by the server pipeline before validation): galleries with 2–3 images stay,
+ * 1 image → plain image, 0 → dropped, more than 3 → the first 3.
+ */
+export function normalizeGalleries(doc: JSONContent): JSONContent {
+  if (!doc.content) return doc;
+  const content: JSONContent[] = [];
+  let changed = false;
+  for (const child of doc.content) {
+    if (child.type === "gallery") {
+      const images = (child.content ?? []).filter(
+        (c) => c.type === "image" && typeof c.attrs?.src === "string" && !!c.attrs.src,
+      );
+      if (images.length >= GALLERY_MIN) {
+        const kept = images.slice(0, GALLERY_MAX);
+        if (kept.length !== (child.content ?? []).length) changed = true;
+        content.push(kept.length === (child.content ?? []).length ? child : { ...child, content: kept });
+      } else {
+        changed = true;
+        if (images.length === 1) content.push(images[0]!);
+      }
+      continue;
+    }
+    const next = normalizeGalleries(child);
+    if (next !== child) changed = true;
+    content.push(next);
+  }
+  return changed ? { ...doc, content } : doc;
+}
+
 /* ───────────────────────── Extension list ───────────────────────── */
 
 /**
@@ -343,6 +454,7 @@ export function getExtensions(): AnyExtension[] {
       dropcursor: { color: false, width: 2, class: "editor-dropcursor" },
     }),
     FigureImage,
+    Gallery,
     TextColorMark,
     NamedHighlight,
     TextAlign.configure({ types: ["heading", "paragraph"], alignments: [...TEXT_ALIGNMENTS] }),

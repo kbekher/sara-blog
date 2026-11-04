@@ -15,44 +15,50 @@ async function CopyrightYear() {
   return <>{new Date().getFullYear()}</>;
 }
 
+/**
+ * Minimal footer: brand, small links, copyright, one hairline. The newsletter strip sits above it on every page
+ * except the home page, which shows its own strip (marked [data-home-newsletter]; hidden here via CSS :has()).
+ */
 export function SiteFooter({ dict }: { dict: Dictionary }) {
   return (
-    <footer className="mt-24 border-t border-border bg-bg-sunken sm:mt-32">
-      <div className="mx-auto grid max-w-6xl gap-12 px-5 py-14 sm:px-8 md:grid-cols-[1fr_minmax(0,28rem)] md:gap-16 md:py-20">
-        <div className="flex flex-col gap-6">
-          <div>
-            <Link href="/" className="font-serif text-2xl font-semibold text-fg-strong">
+    <footer className="mt-24 sm:mt-32">
+      <div className="mx-auto max-w-[75rem] px-5 sm:px-8 lg:px-12">
+        <div className="footer-newsletter mb-16 sm:mb-20">
+          <NewsletterForm labels={dict.newsletter} variant="strip" />
+        </div>
+        <div className="flex flex-col gap-5 border-t border-border pt-7 pb-10 text-[0.8125rem] text-fg-subtle sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <Link href="/" className="brand-wordmark text-[0.9375rem] text-fg-strong">
               {site.name}
             </Link>
-            <p className="mt-3 max-w-[40ch] text-[0.9375rem] text-fg-muted text-pretty">{site.description}</p>
+            <nav aria-label={dict.a11y.footerNav}>
+              <ul className="flex flex-wrap items-center gap-x-1">
+                <li>
+                  <Link href="/tags" className="inline-flex min-h-11 items-center px-2 transition-colors hover:text-fg-strong sm:min-h-8">
+                    {dict.nav.tags}
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/search" className="inline-flex min-h-11 items-center px-2 transition-colors hover:text-fg-strong sm:min-h-8">
+                    {dict.nav.search}
+                  </Link>
+                </li>
+                <li>
+                  <a
+                    href="/rss.xml"
+                    className="inline-flex min-h-11 items-center gap-1.5 px-2 transition-colors hover:text-fg-strong sm:min-h-8"
+                  >
+                    <Rss aria-hidden className="size-3.5" />
+                    <span>{dict.footer.rss}</span>
+                  </a>
+                </li>
+              </ul>
+            </nav>
           </div>
-
-          <nav aria-label={dict.a11y.footerNav} className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm">
-            <Link href="/tags" className="text-fg-muted transition-colors hover:text-fg-strong">
-              {dict.nav.tags}
-            </Link>
-            <Link href="/search" className="text-fg-muted transition-colors hover:text-fg-strong">
-              {dict.nav.search}
-            </Link>
-            <a
-              href="/rss.xml"
-              className="inline-flex items-center gap-1.5 text-fg-muted transition-colors hover:text-fg-strong"
-            >
-              <Rss aria-hidden className="size-3.5" />
-              <span>{dict.footer.rss}</span>
-            </a>
-          </nav>
-
-          <p className="mt-auto text-sm text-fg-subtle">
+          <p>
             © <CopyrightYear /> {site.author}. {dict.footer.rights}
           </p>
         </div>
-
-        {/* The site's single newsletter signup (post pages don't repeat it), so it gets a faint accent glow. */}
-        <NewsletterForm
-          labels={dict.newsletter}
-          className="self-start bg-[radial-gradient(110%_100%_at_100%_0%,color-mix(in_oklab,var(--accent)_10%,transparent),transparent_70%)]"
-        />
       </div>
     </footer>
   );

@@ -9,6 +9,7 @@ export type LocalDraftData = {
   slug: string;
   cover: CoverImage | null;
   featured: boolean;
+  location: string;
   tagNames: string[];
   draft: { title: string; excerpt: string; contentJson: JSONContent };
 };
@@ -35,7 +36,7 @@ export function readLocalDraft(postId: string | null): LocalDraft | null {
     if (!draft) return null;
     return {
       savedAt: parsed.savedAt,
-      data: { slug: rest.slug ?? "", cover: rest.cover ?? null, featured: !!rest.featured, tagNames: rest.tagNames ?? [], draft },
+      data: { slug: rest.slug ?? "", cover: rest.cover ?? null, featured: !!rest.featured, location: typeof rest.location === "string" ? rest.location : "", tagNames: rest.tagNames ?? [], draft },
     };
   } catch {
     return null;

@@ -146,6 +146,15 @@ const contentSchema = z.object({
   contentJson: docSchema,
 });
 
+const LOCATION_MAX_LENGTH = 80;
+
+/** «Место»: trimmed, whitespace collapsed; empty → null. */
+const locationSchema = z
+  .string()
+  .nullish()
+  .transform((v) => v?.replace(/\s+/g, " ").trim() || null)
+  .refine((v) => v === null || v.length <= LOCATION_MAX_LENGTH, `Место — не более ${LOCATION_MAX_LENGTH} символов.`);
+
 const saveSchema = z.object({
   id: z.uuid().optional(),
   slug: z
@@ -157,6 +166,7 @@ const saveSchema = z.object({
     .optional(),
   cover: coverSchema,
   featured: z.boolean(),
+  location: locationSchema,
   tagNames: z.array(z.string().max(40, "Тег — не более 40 символов.")).max(MAX_TAGS, `Не более ${MAX_TAGS} тегов.`),
   source: contentSchema,
 });
@@ -237,7 +247,7 @@ export async function savePost(
       existing
         ? db
             .update(posts)
-            .set({ slug, cover, featured: data.featured, sourceLocale: siteLocale, updatedAt: now })
+            .set({ slug, cover, featured: data.featured, location: data.location, sourceLocale: siteLocale, updatedAt: now })
             .where(eq(posts.id, id))
         : db.insert(posts).values({
             id,
@@ -246,6 +256,7 @@ export async function savePost(
             sourceLocale: siteLocale,
             cover,
             featured: data.featured,
+            location: data.location,
             createdAt: now,
             updatedAt: now,
           }),

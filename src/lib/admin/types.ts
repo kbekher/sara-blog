@@ -25,6 +25,8 @@ export type PostEditorData = {
   status: "draft" | "published";
   cover: CoverImage | null;
   featured: boolean;
+  /** Where the story happens, e.g. «Альпы, Швейцария» (shown on the post). Null = not set. */
+  location?: string | null;
   /** ISO string or null */
   publishedAt: string | null;
   updatedAt: string;
@@ -52,6 +54,8 @@ export type SavePostInput = {
   slug?: string; // omitted → generated (transliterated) from source title
   cover: CoverImage | null;
   featured: boolean;
+  /** «Место», ≤ 80 chars; empty/omitted → null. */
+  location?: string | null;
   /** tag display names, e.g. ["путешествия", "семья"] */
   tagNames: string[];
   /** the post's text */

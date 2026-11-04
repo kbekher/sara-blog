@@ -11,7 +11,14 @@ import { getSchema, type JSONContent } from "@tiptap/core";
 import { Node as PMNode, type Schema } from "@tiptap/pm/model";
 import sanitize from "sanitize-html";
 import { siteLocale } from "@/lib/i18n/config";
-import { getExtensions, isAllowedHref, isUnsplashProfileUrl, PHOTO_CREDIT_CLASS } from "./extensions";
+import {
+  GALLERY_CLASS,
+  getExtensions,
+  isAllowedHref,
+  isUnsplashProfileUrl,
+  normalizeGalleries,
+  PHOTO_CREDIT_CLASS,
+} from "./extensions";
 import { readingMinutesFor } from "./stats";
 import { TEXT_COLORS, type RenderedContent } from "./types";
 
@@ -34,6 +41,7 @@ export function emptyDoc(): JSONContent {
 /* ───────────────────────── Sanitizer ───────────────────────── */
 
 const ALIGN = [/^(left|center|right|justify)$/];
+const GALLERY_COUNTS = ["2", "3"];
 
 function isExternal(href: string): boolean {
   return /^https?:\/\//i.test(href);
@@ -42,7 +50,7 @@ function isExternal(href: string): boolean {
 const SANITIZE_OPTIONS: sanitize.IOptions = {
   allowedTags: [
     "p", "br", "h2", "h3", "strong", "em", "u", "s", "code", "pre", "blockquote",
-    "ul", "ol", "li", "hr", "a", "figure", "img", "figcaption", "span", "mark",
+    "ul", "ol", "li", "hr", "a", "figure", "img", "figcaption", "span", "mark", "div",
   ],
   allowedAttributes: {
     a: ["href", "target", "rel", "title"],
@@ -51,13 +59,15 @@ const SANITIZE_OPTIONS: sanitize.IOptions = {
     // Structured stock-photo credit (see FigureImage); values are validated in transformTags.figure.
     figure: [{ name: "data-source", multiple: false, values: ["unsplash"] }, "data-credit-name", "data-credit-url"],
     mark: [{ name: "data-highlight", multiple: false, values: [...TEXT_COLORS] }],
+    // Gallery wrapper only (see Gallery in ./extensions); any other <div> is unwrapped by exclusiveFilter.
+    div: ["class", { name: "data-type", multiple: false, values: ["gallery"] }, { name: "data-count", multiple: false, values: GALLERY_COUNTS }],
     p: ["style"],
     h2: ["style"],
     h3: ["style"],
     ol: ["start", "type"],
     code: ["class"],
   },
-  allowedClasses: { code: [/^language-[\w-]+$/], span: [PHOTO_CREDIT_CLASS] },
+  allowedClasses: { code: [/^language-[\w-]+$/], span: [PHOTO_CREDIT_CLASS], div: [GALLERY_CLASS] },
   allowedStyles: {
     p: { "text-align": ALIGN },
     h2: { "text-align": ALIGN },
@@ -95,6 +105,15 @@ const SANITIZE_OPTIONS: sanitize.IOptions = {
       if (attribs["data-source"] !== "unsplash" || !name || !isUnsplashProfileUrl(url)) return { tagName, attribs: {} };
       return { tagName, attribs: { "data-source": "unsplash", "data-credit-name": name, "data-credit-url": url } };
     },
+    // A <div> survives only as a complete gallery wrapper: class="gallery" data-type="gallery" data-count="2|3".
+    div: (tagName, attribs): sanitize.Tag => {
+      const classes = (attribs.class ?? "").split(/\s+/);
+      const count = attribs["data-count"] ?? "";
+      if (attribs["data-type"] !== "gallery" || !classes.includes(GALLERY_CLASS) || !GALLERY_COUNTS.includes(count)) {
+        return { tagName, attribs: {} };
+      }
+      return { tagName, attribs: { class: GALLERY_CLASS, "data-type": "gallery", "data-count": count } };
+    },
     img: (tagName, attribs) => ({
       tagName,
       attribs: { ...attribs, loading: "lazy", decoding: "async" },
@@ -104,6 +123,8 @@ const SANITIZE_OPTIONS: sanitize.IOptions = {
     // Images without an (https) src are useless; anchors without href become plain text.
     if (frame.tag === "img") return !frame.attribs.src;
     if (frame.tag === "a" && !frame.attribs.href) return "excludeTag";
+    // Non-gallery <div>s (attributes already stripped by transformTags.div) keep only their content.
+    if (frame.tag === "div" && frame.attribs["data-type"] !== "gallery") return "excludeTag";
     // Color/highlight wrappers that lost their (invalid) value carry no meaning.
     if (frame.tag === "span" && !frame.attribs["data-color"] && frame.attribs.class !== PHOTO_CREDIT_CLASS) return "excludeTag";
     return false;
@@ -112,7 +133,10 @@ const SANITIZE_OPTIONS: sanitize.IOptions = {
 
 /** Allow-list sanitizer matching exactly what the editor's extensions produce. */
 export function sanitizeHtml(html: string): string {
-  return sanitize(html, SANITIZE_OPTIONS);
+  // Wrappers whose images were all dropped (e.g. a non-https src) would leave empty boxes behind.
+  return sanitize(html, SANITIZE_OPTIONS)
+    .replace(/<figure(?: [^>]*)?><\/figure>/g, "")
+    .replace(/<div class="gallery" data-type="gallery" data-count="[23]"><\/div>/g, "");
 }
 
 /* ───────────────────────── JSON ⇄ HTML ───────────────────────── */
@@ -120,7 +144,7 @@ export function sanitizeHtml(html: string): string {
 /** Validate a document against the schema and return it normalized (unknown attrs dropped). */
 function toNode(doc: JSONContent): PMNode {
   try {
-    const node = PMNode.fromJSON(schema(), doc);
+    const node = PMNode.fromJSON(schema(), normalizeGalleries(doc));
     node.check();
     return node;
   } catch (error) {

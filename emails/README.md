@@ -1,6 +1,6 @@
 # Email templates (Brevo)
 
-Styled like the blog (dark, Source Serif 4 / Georgia headings, warm amber accent `#D4A373`).
+Styled like the blog — "Yuki Diaries" (dark ink `#1b1918` background, `#252220` card, greige text, Inter Tight brand, Source Serif 4 / Georgia headings, teal accent `#4FD1C5` with dark `#1b1918` button text).
 
 | File | Use in Brevo | Required tag |
 |---|---|---|
@@ -20,7 +20,7 @@ For the double opt-in template also set the template's **Sender** to your verifi
 From the repo on your computer (needs a verified sender in Brevo):
 
 ```bash
-BREVO_API_KEY=xkeysib-... pnpm brevo:setup -- --sender her@email.com --name "Сара"
+BREVO_API_KEY=xkeysib-... pnpm brevo:setup -- --sender her@email.com --name "Yuki"
 ```
 
 Creates/updates both templates (double opt-in gets the required `optin` tag) and prints

@@ -52,6 +52,12 @@ const ru = {
     emptyTitle: "Здесь пока тихо",
     emptyText: "Первые тексты уже пишутся. Подпишитесь на рассылку — и я напишу вам, как только они появятся.",
     readPost: "Читать",
+    heroCta: "Читать записи",
+    heroNote: "Пишу редко, но честно. Каждая запись — отдельная история.",
+    heroPortraitAlt: "Портрет автора",
+    latestPosts: "Последние записи",
+    archive: "Архив",
+    readMore: "Читать",
   },
   pagination: {
     newer: "Новее",
@@ -79,6 +85,7 @@ const ru = {
     next: "Следующая запись",
     moreReading: "Читать дальше",
     by: "Автор",
+    minutesShort: "{n} мин",
   },
   tags: {
     title: "Темы",

@@ -41,3 +41,26 @@ const dateFormat = new Intl.DateTimeFormat(siteLocaleTag, {
 export function formatDate(date: Date | string): string {
   return dateFormat.format(typeof date === "string" ? new Date(date) : date);
 }
+
+const monthFormat = new Intl.DateTimeFormat(siteLocaleTag, { month: "long", year: "numeric", timeZone: site.timeZone });
+const numericMonthFormat = new Intl.DateTimeFormat(siteLocaleTag, {
+  month: "2-digit",
+  year: "numeric",
+  timeZone: site.timeZone,
+});
+
+/** Month and year for labels: "ноябрь 2026" (no "г." suffix; labels are uppercased in CSS). */
+export function formatMonthYear(date: Date | string): string {
+  const parts = monthFormat.formatToParts(typeof date === "string" ? new Date(date) : date);
+  const month = parts.find((p) => p.type === "month")?.value ?? "";
+  const year = parts.find((p) => p.type === "year")?.value ?? "";
+  return `${month} ${year}`.trim();
+}
+
+/** Compact numeric date for vertical card labels: "2026 · 11". */
+export function formatYearMonth(date: Date | string): string {
+  const parts = numericMonthFormat.formatToParts(typeof date === "string" ? new Date(date) : date);
+  const month = parts.find((p) => p.type === "month")?.value ?? "";
+  const year = parts.find((p) => p.type === "year")?.value ?? "";
+  return `${year} · ${month}`;
+}

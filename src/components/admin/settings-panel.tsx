@@ -1,11 +1,13 @@
 "use client";
-/** Post settings slide-over: address (slug), tags, featured, excerpt, publication date, delete. */
+/** Post settings slide-over: address (slug), excerpt, location, tags, featured, publication date, delete. */
 import { useEffect, useState } from "react";
 import { CalendarClock, Trash2 } from "lucide-react";
 import { listTags } from "@/app/admin/actions";
 import { Dialog } from "./dialog";
 import { TagsInput } from "./tags-input";
 import { LocalTime, useIsClient } from "./time";
+
+const LOCATION_MAX_LENGTH = 80;
 
 export function slugify(value: string): string {
   return value
@@ -28,6 +30,8 @@ type Props = {
   onTagsChange: (tags: string[]) => void;
   featured: boolean;
   onFeaturedChange: (value: boolean) => void;
+  location: string;
+  onLocationChange: (value: string) => void;
   excerpt: string;
   onExcerptChange: (value: string) => void;
   status: "draft" | "published" | "scheduled";
@@ -47,6 +51,8 @@ export function SettingsPanel(props: Props) {
     onTagsChange,
     featured,
     onFeaturedChange,
+    location,
+    onLocationChange,
     excerpt,
     onExcerptChange,
     status,
@@ -133,6 +139,22 @@ export function SettingsPanel(props: Props) {
             placeholder="Одно-два предложения: видно в списке записей и при отправке ссылки"
           />
           <p className="admin-hint">{excerpt.length}/300 · показывается под заголовком, в поиске и в соцсетях.</p>
+        </section>
+
+        <section>
+          <label htmlFor="post-location" className="admin-label">
+            Место <span className="font-normal text-fg-subtle">· необязательно</span>
+          </label>
+          <input
+            id="post-location"
+            className="admin-input"
+            value={location}
+            maxLength={LOCATION_MAX_LENGTH}
+            autoComplete="off"
+            placeholder="Например, Альпы, Швейцария"
+            onChange={(e) => onLocationChange(e.target.value.replace(/[\r\n]+/g, " "))}
+          />
+          <p className="admin-hint">Где это было — показывается в записи на сайте.</p>
         </section>
 
         <section>

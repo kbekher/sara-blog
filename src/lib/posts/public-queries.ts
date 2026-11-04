@@ -30,6 +30,7 @@ const PUBLIC_CACHE_LIFE = { stale: 60, revalidate: 60, expire: 3600 } as const;
 export const DEFAULT_PAGE_SIZE = 12;
 const SEARCH_LIMIT = 30;
 const SEARCH_MAX_QUERY = 100;
+const MAX_SUMMARY_IMAGES = 4;
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -46,6 +47,13 @@ export type PostSummary = {
   publishedAt: Date;
   readingMinutes: number;
   tags: TagRef[];
+  /** Optional place shown in labels ("Альпы, Швейцария"); null when not set. */
+  location: string | null;
+  /**
+   * Up to MAX_SUMMARY_IMAGES image URLs for collages: the cover first (if any), then the first `<img src>`s of the
+   * body (https only, deduplicated). Search results carry the cover only.
+   */
+  images: string[];
 };
 
 export type PostDetail = PostSummary & {
@@ -78,6 +86,7 @@ const postColumns = {
   slug: posts.slug,
   cover: posts.cover,
   featured: posts.featured,
+  location: posts.location,
   publishedAt: posts.publishedAt,
   createdAt: posts.createdAt,
   updatedAt: posts.updatedAt,
@@ -87,6 +96,7 @@ type PostRow = {
   slug: string;
   cover: CoverImage | null;
   featured: boolean;
+  location: string | null;
   publishedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -98,8 +108,36 @@ type TextRow = {
   excerpt: string;
   readingMinutes: number;
   updatedAt: Date;
-  contentHtml?: string;
+  contentHtml: string;
 };
+
+const IMG_SRC_RE = /<img\b[^>]*?\ssrc="(https:\/\/[^"]+)"/gi;
+
+/** Decodes the few entities sanitize-html writes into attribute values (`&amp;` in query strings, mostly). */
+function decodeAttr(value: string): string {
+  return value
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&#x27;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&");
+}
+
+/** Cover URL first, then the body's https `<img src>`s, deduplicated, at most MAX_SUMMARY_IMAGES. */
+function collectImages(cover: CoverImage | null, html: string): string[] {
+  const urls = new Set<string>();
+  if (cover?.url) urls.add(cover.url);
+  for (const match of html.matchAll(IMG_SRC_RE)) {
+    if (urls.size >= MAX_SUMMARY_IMAGES) break;
+    urls.add(decodeAttr(match[1]));
+  }
+  return Array.from(urls).slice(0, MAX_SUMMARY_IMAGES);
+}
+
+function cleanLocation(value: string | null | undefined): string | null {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
+}
 
 async function loadTags(postIds: string[]): Promise<Map<string, TagRef[]>> {
   const map = new Map<string, TagRef[]>();
@@ -141,8 +179,9 @@ async function hydrate(rows: PostRow[], withContent = false): Promise<PostSummar
         excerpt: postTranslations.excerpt,
         readingMinutes: postTranslations.readingMinutes,
         updatedAt: postTranslations.updatedAt,
-        // Only fetch the (large) HTML body when the caller renders it.
-        ...(withContent ? { contentHtml: postTranslations.contentHtml } : {}),
+        // The body is read for summaries too (only to pick collage images; the HTML itself is dropped below, so
+X
+        contentHtml: postTranslations.contentHtml,
       })
       .from(postTranslations)
       .where(
@@ -173,6 +212,8 @@ async function hydrate(rows: PostRow[], withContent = false): Promise<PostSummar
       publishedAt: p.publishedAt ?? p.createdAt,
       readingMinutes: Math.max(1, row.readingMinutes),
       tags: tagMap.get(p.id) ?? [],
+      location: cleanLocation(p.location),
+      images: collectImages(p.cover ?? null, row.contentHtml ?? ""),
     };
     // Detail-only fields stay out of summaries so cached list payloads remain small.
     if (withContent) {
@@ -429,6 +470,8 @@ export async function searchPosts(rawQuery: string): Promise<SearchResult[]> {
     publishedAt: r.publishedAt ?? r.createdAt,
     readingMinutes: Math.max(1, r.readingMinutes),
     tags: tagMap.get(r.id) ?? [],
+    location: cleanLocation(r.location),
+    images: r.cover?.url ? [r.cover.url] : [],
     snippet: makeSnippet(r.plainText, query, r.excerpt),
   }));
 }

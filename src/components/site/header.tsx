@@ -23,18 +23,17 @@ export function SiteHeader({ dict }: { dict: Dictionary }) {
 
   return (
     <HeaderFrame>
-      <div className="relative mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-5 sm:px-8">
+      <div className="relative mx-auto flex h-16 max-w-[75rem] items-center justify-between gap-4 px-5 sm:h-[4.5rem] sm:px-8 lg:px-12">
         <Link
           href="/"
           aria-label={fmt(dict.a11y.home, { site: site.name })}
-          className="font-serif text-[1.3125rem] font-semibold tracking-[-0.01em] text-fg-strong transition-opacity duration-300 ease-apple hover:opacity-80"
+          className="brand-wordmark -mx-1 inline-flex min-h-11 items-center px-1 text-[1.125rem] text-fg-strong transition-opacity duration-300 ease-apple hover:opacity-75"
         >
           {site.name}
         </Link>
 
-        <div className="hidden items-center gap-3 md:flex">
+        <div className="hidden items-center gap-1 md:flex">
           <nav aria-label={dict.a11y.mainNav}>{nav("row")}</nav>
-          <span aria-hidden className="h-5 w-px bg-border" />
           <ThemeToggle labels={themeLabels} />
         </div>
 

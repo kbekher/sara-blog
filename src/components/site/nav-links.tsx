@@ -43,11 +43,13 @@ export function NavLinksView({
               aria-current={current ? "page" : undefined}
               aria-label={isSearch && layout === "row" ? labels.search : undefined}
               className={clsx(
-                "inline-flex items-center gap-2 rounded-full text-[0.9375rem] transition-colors duration-300 ease-apple",
-                layout === "row" ? (isSearch ? "size-9 justify-center" : "h-9 px-3.5") : "h-11 w-full px-4 text-base",
-                current ? "text-fg-strong" : "text-fg-muted hover:text-fg-strong",
-                "hover:bg-surface-hover",
-                current && "bg-surface",
+                "inline-flex items-center gap-2 rounded-full transition-colors duration-300 ease-apple",
+                layout === "row"
+                  ? isSearch
+                    ? "size-10 justify-center"
+                    : "h-10 px-4 text-[0.875rem]"
+                  : "h-11 w-full px-4 text-base",
+                current ? "bg-surface-hover text-fg-strong" : "text-fg-muted hover:bg-surface hover:text-fg-strong",
               )}
             >
               {isSearch && <Search aria-hidden className="size-[18px]" strokeWidth={1.75} />}

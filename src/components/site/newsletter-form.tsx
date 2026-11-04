@@ -31,7 +31,8 @@ export function NewsletterForm({
   className,
 }: {
   labels: NewsletterLabels;
-  variant?: "card" | "inline";
+  /** card: bordered box; inline: no chrome (empty states); strip: the wide rounded panel (home, footer). */
+  variant?: "card" | "inline" | "strip";
   className?: string;
 }) {
   const [state, setState] = useState<State>({ status: "idle" });
@@ -77,24 +78,39 @@ export function NewsletterForm({
   }
 
   const loading = state.status === "loading";
+  const strip = variant === "strip";
 
   return (
     <section
       aria-labelledby={titleId}
       className={clsx(
-        variant === "card" && "rounded-3xl border border-border bg-surface p-6 sm:p-8",
+        variant === "card" && "rounded-[1.5rem] bg-bg-elevated p-6 sm:p-8",
+        strip &&
+          "grid gap-6 rounded-[1.5rem] bg-bg-elevated px-5.5 py-7 sm:px-10 sm:py-10 lg:grid-cols-[1fr_minmax(0,28rem)] lg:items-center lg:gap-10 lg:px-12 lg:py-11",
         className,
       )}
     >
-      <h2 id={titleId} className="font-serif text-2xl font-semibold tracking-[-0.01em] text-fg-strong text-balance">
-        {labels.title}
-      </h2>
-      <p className="mt-2 text-[0.9375rem] text-fg-muted text-pretty">{labels.text}</p>
+      <div>
+        <h2 id={titleId} className="site-label">
+          {labels.title}
+        </h2>
+        <p
+          className={clsx(
+            "mt-2.5 font-serif leading-tight tracking-[-0.01em] text-fg-strong text-balance",
+            strip ? "text-[1.875rem] sm:text-[2.125rem]" : "text-[1.625rem]",
+          )}
+        >
+          {labels.text}
+        </p>
+      </div>
 
       {state.status === "success" ? (
         <div
           role="status"
-          className="mt-5 flex items-start gap-3 rounded-2xl border border-border bg-bg-elevated px-4 py-3.5 motion-safe:animate-[fade-up_500ms_var(--ease-out-expo)]"
+          className={clsx(
+            "flex items-start gap-3 rounded-2xl border border-border bg-bg px-4 py-3.5 motion-safe:animate-[fade-up_500ms_var(--ease-out-expo)]",
+            !strip && "mt-5",
+          )}
         >
           <span className="mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-accent text-accent-fg">
             <Check aria-hidden className="size-3.5" strokeWidth={2.5} />
@@ -105,7 +121,7 @@ export function NewsletterForm({
           </p>
         </div>
       ) : (
-        <form onSubmit={onSubmit} noValidate className="mt-5">
+        <form onSubmit={onSubmit} noValidate className={clsx(!strip && "mt-5", strip && "lg:pt-5")}>
           {/* Stacked on mobile (each control full-width, fixed height), inline from `sm` up. The input must not
               use `flex-1` in the column layout: its 0 basis would collapse the height to a sliver. */}
           <div className="flex flex-col gap-2.5 sm:flex-row sm:items-stretch">
@@ -125,7 +141,7 @@ export function NewsletterForm({
               disabled={loading}
               className={clsx(
                 // 16px text on mobile prevents iOS Safari from zooming into the focused field.
-                "h-12 w-full min-w-0 shrink-0 rounded-full border bg-bg px-4.5 text-base text-fg-strong placeholder:text-fg-subtle",
+                "h-12 w-full min-w-0 shrink-0 rounded-full border bg-transparent px-4.5 text-base text-fg-strong placeholder:text-fg-subtle",
                 "sm:h-11 sm:w-auto sm:flex-1 sm:text-[0.9375rem]",
                 "transition-[border-color,box-shadow] duration-300 ease-apple outline-none",
                 "focus-visible:border-accent focus-visible:shadow-[0_0_0_3px_var(--selection)] focus-visible:outline-none",
@@ -144,7 +160,7 @@ export function NewsletterForm({
               disabled={loading}
               className={clsx(
                 "group inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-full bg-accent px-5.5 text-base font-medium text-accent-fg",
-                "sm:h-11 sm:text-[0.9375rem]",
+                "sm:h-11 sm:text-[0.875rem]",
                 "transition-[background-color,transform] duration-300 ease-apple hover:bg-accent-hover active:scale-[0.98]",
                 "disabled:cursor-progress disabled:opacity-80",
               )}
