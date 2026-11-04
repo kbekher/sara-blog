@@ -225,9 +225,9 @@ export function renderPostEmail(post: CampaignPost): string {
           c.source === "unsplash" && c.credit?.name
             ? `
                 <tr>
-                  <td style="padding:8px 40px 0 40px;font-family:${SANS};font-size:12px;line-height:1.5;color:#75726d;">
-                    Фото: <a href="${esc(withUnsplashUtm(c.credit.profileUrl))}" target="_blank" style="color:#a3a09b;">${esc(c.credit.name)}</a>
-                    на <a href="${esc(withUnsplashUtm("https://unsplash.com/"))}" target="_blank" style="color:#a3a09b;">Unsplash</a>
+                  <td style="padding:8px 40px 0 40px;font-family:${SANS};font-size:12px;line-height:1.5;color:#938b84;">
+                    Фото: <a href="${esc(withUnsplashUtm(c.credit.profileUrl))}" target="_blank" style="color:#a39b93;">${esc(c.credit.name)}</a>
+                    на <a href="${esc(withUnsplashUtm("https://unsplash.com/"))}" target="_blank" style="color:#a39b93;">Unsplash</a>
                   </td>
                 </tr>`
             : "";
@@ -245,7 +245,7 @@ export function renderPostEmail(post: CampaignPost): string {
 
   const subtitle = excerpt
     ? `
-                    <p style="margin:0 0 22px 0;font-family:${SERIF};font-style:italic;font-size:19px;line-height:1.55;color:#a3a09b;">
+                    <p style="margin:0 0 22px 0;font-family:${SERIF};font-style:italic;font-size:19px;line-height:1.55;color:#a39b93;">
                       ${esc(excerpt)}
                     </p>`
     : "";
@@ -253,7 +253,7 @@ export function renderPostEmail(post: CampaignPost): string {
   const body = paragraphs
     .map(
       (p, i) => `
-                    <p style="margin:0 0 ${i === paragraphs.length - 1 ? 28 : 16}px 0;font-family:${SANS};font-size:17px;line-height:1.7;color:#e8e6e3;">
+                    <p style="margin:0 0 ${i === paragraphs.length - 1 ? 28 : 16}px 0;font-family:${SANS};font-size:17px;line-height:1.7;color:#ece6e0;">
                       ${esc(p).replace(/\n/g, "<br>")}
                     </p>`,
     )
@@ -269,45 +269,45 @@ export function renderPostEmail(post: CampaignPost): string {
   <title>${esc(title)} — ${esc(site.name)}</title>
   <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&amp;display=swap" rel="stylesheet">
   <style>
-    body { margin: 0; padding: 0; background: #0b0b0c; }
-    a { color: #d4a373; }
+    body { margin: 0; padding: 0; background: #1b1918; }
+    a { color: #4fd1c5; }
     @media (max-width: 620px) {
       .pad { padding: 28px 22px !important; }
       .title { font-size: 28px !important; }
     }
   </style>
 </head>
-<body style="margin:0;padding:0;background:#0b0b0c;">
-  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#0b0b0c;">
+<body style="margin:0;padding:0;background:#1b1918;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#1b1918;">
     ${esc(preheader)}
   </div>
 
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#0b0b0c" style="background:#0b0b0c;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#1b1918" style="background:#1b1918;">
     <tr>
       <td align="center" style="padding:40px 16px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;">
           <tr>
-            <td style="padding:0 4px 22px 4px;font-family:${SERIF};font-size:20px;font-weight:600;color:#f5f4f2;">
-              <a href="${esc(home)}" style="color:#f5f4f2;text-decoration:none;">${esc(site.name)}</a>
+            <td style="padding:0 4px 22px 4px;font-family:${SERIF};font-size:20px;font-weight:600;color:#f7f3ef;">
+              <a href="${esc(home)}" style="color:#f7f3ef;text-decoration:none;">${esc(site.name)}</a>
             </td>
           </tr>
 
           <tr>
-            <td bgcolor="#151517" style="background:#151517;border:1px solid #26262a;border-radius:20px;overflow:hidden;">
+            <td bgcolor="#252220" style="background:#252220;border:1px solid #34302d;border-radius:20px;overflow:hidden;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${cover}
                 <tr>
                   <td class="pad" style="padding:36px 40px 40px 40px;">
-                    <p style="margin:0 0 12px 0;font-family:${SANS};font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#d4a373;">
+                    <p style="margin:0 0 12px 0;font-family:${SANS};font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#4fd1c5;">
                       Новая запись
                     </p>
-                    <h1 class="title" style="margin:0 0 14px 0;font-family:${SERIF};font-size:34px;line-height:1.12;font-weight:600;color:#f5f4f2;">
-                      <a href="${esc(url)}" target="_blank" style="color:#f5f4f2;text-decoration:none;">${esc(title)}</a>
+                    <h1 class="title" style="margin:0 0 14px 0;font-family:${SERIF};font-size:34px;line-height:1.12;font-weight:600;color:#f7f3ef;">
+                      <a href="${esc(url)}" target="_blank" style="color:#f7f3ef;text-decoration:none;">${esc(title)}</a>
                     </h1>${subtitle}${body}
                     <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                       <tr>
-                        <td bgcolor="#d4a373" style="background:#d4a373;border-radius:999px;">
+                        <td bgcolor="#4fd1c5" style="background:#4fd1c5;border-radius:999px;">
                           <a href="${esc(url)}" target="_blank"
-                             style="display:inline-block;padding:14px 28px;font-family:${SANS};font-size:16px;font-weight:600;color:#1a1208;text-decoration:none;border-radius:999px;">
+                             style="display:inline-block;padding:14px 28px;font-family:${SANS};font-size:16px;font-weight:600;color:#1b1918;text-decoration:none;border-radius:999px;">
                             Читать полностью →
                           </a>
                         </td>
@@ -320,11 +320,11 @@ export function renderPostEmail(post: CampaignPost): string {
           </tr>
 
           <tr>
-            <td style="padding:24px 4px 0 4px;font-family:${SANS};font-size:13px;line-height:1.6;color:#75726d;">
+            <td style="padding:24px 4px 0 4px;font-family:${SANS};font-size:13px;line-height:1.6;color:#938b84;">
               Вы получаете это письмо, потому что подписались на ${esc(site.name)}.<br>
-              <a href="{{ unsubscribe }}" style="color:#a3a09b;">Отписаться</a>
+              <a href="{{ unsubscribe }}" style="color:#a39b93;">Отписаться</a>
               &nbsp;·&nbsp;
-              <a href="{{ mirror }}" style="color:#a3a09b;">Открыть в браузере</a>
+              <a href="{{ mirror }}" style="color:#a39b93;">Открыть в браузере</a>
             </td>
           </tr>
         </table>

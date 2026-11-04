@@ -350,7 +350,18 @@ export const Gallery = Node.create({
   defining: true,
 
   parseHTML() {
-    return [{ tag: 'div[data-type="gallery"]', priority: 70 }];
+    return [
+      {
+        tag: 'div[data-type="gallery"]',
+        priority: 70,
+        // Fewer than 2 usable photos → not a gallery: the <figure>s inside are parsed as plain images.
+        getAttrs: (element) =>
+          Array.from(element.querySelectorAll("img[src]")).filter((img) => !img.getAttribute("src")!.startsWith("data:"))
+            .length >= GALLERY_MIN
+            ? null
+            : false,
+      },
+    ];
   },
 
   renderHTML({ node }) {

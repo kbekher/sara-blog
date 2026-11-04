@@ -95,7 +95,7 @@ function HeroBand({ dict, portrait, hasPosts }: { dict: Dictionary; portrait: Co
           <p className="site-label">{dict.home.eyebrow}</p>
           <h1
             id="hero-title"
-            className="brand-wordmark mt-6 text-[3.625rem] leading-[0.92] text-fg-strong sm:text-[5rem] lg:mt-auto lg:text-[6.5rem]"
+            className="brand-wordmark mt-6 text-[3.625rem] leading-[0.92] text-fg-strong sm:text-[5rem] lg:mt-auto lg:text-[5.75rem] xl:text-[6.5rem]"
           >
             <span className="block">{first}</span>
             {rest.length > 0 && <span className="block">{rest.join(" ")}</span>}

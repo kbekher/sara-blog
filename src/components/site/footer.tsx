@@ -28,7 +28,7 @@ export function SiteFooter({ dict }: { dict: Dictionary }) {
         </div>
         <div className="flex flex-col gap-5 border-t border-border pt-7 pb-10 text-[0.8125rem] text-fg-subtle sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-            <Link href="/" className="brand-wordmark text-[0.9375rem] text-fg-strong">
+            <Link href="/" className="brand-wordmark inline-flex min-h-11 items-center text-[0.9375rem] text-fg-strong sm:min-h-8">
               {site.name}
             </Link>
             <nav aria-label={dict.a11y.footerNav}>
