@@ -56,6 +56,8 @@ export const posts = pgTable(
     newsletterCampaignId: integer("newsletter_campaign_id"),
     /** When the announcement email was sent, or is scheduled to be sent (future = scheduled, not sent yet). */
     newsletterSentAt: timestamp("newsletter_sent_at", { withTimezone: true }),
+    /** Optional place shown in labels, e.g. "Альпы, Швейцария". */
+    location: text("location"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -123,6 +125,13 @@ export const loginAttempts = pgTable(
   },
   (t) => [index("login_attempts_ip_idx").on(t.ip, t.createdAt)],
 );
+
+/** Site-wide settings edited in the admin (key → JSON value). Keys: see src/lib/site-settings.ts. */
+export const siteSettings = pgTable("site_settings", {
+  key: text("key").primaryKey(),
+  value: jsonb("value").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 export type Post = typeof posts.$inferSelect;
 export type NewPost = typeof posts.$inferInsert;
