@@ -14,9 +14,9 @@ const lightQuery = () => window.matchMedia("(prefers-color-scheme: light)");
 function readPreference(): ThemePreference {
   try {
     const value = localStorage.getItem(STORAGE_KEY);
-    return value === "dark" || value === "light" || value === "system" ? value : "system";
+    return value === "dark" || value === "light" || value === "system" ? value : "dark";
   } catch {
-    return "system";
+    return "dark";
   }
 }
 

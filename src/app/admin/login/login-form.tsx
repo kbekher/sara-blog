@@ -76,7 +76,7 @@ export function LoginForm() {
         type="submit"
         disabled={pending}
         aria-busy={pending}
-        className="mt-1 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-[0.9375rem] font-semibold text-accent-fg transition-[background-color,opacity,transform] duration-200 ease-apple hover:bg-accent-hover active:scale-[0.99] disabled:cursor-progress disabled:opacity-70"
+        className="mt-1 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-cta px-4 text-[0.9375rem] font-semibold text-cta-fg transition-[background-color,opacity,transform] duration-200 ease-apple hover:bg-cta-hover active:scale-[0.99] disabled:cursor-progress disabled:opacity-70"
       >
         {pending && (
           <span

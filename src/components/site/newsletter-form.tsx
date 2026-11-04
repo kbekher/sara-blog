@@ -112,7 +112,7 @@ export function NewsletterForm({
             !strip && "mt-5",
           )}
         >
-          <span className="mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-accent text-accent-fg">
+          <span className="mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-cta text-cta-fg">
             <Check aria-hidden className="size-3.5" strokeWidth={2.5} />
           </span>
           <p className="text-[0.9375rem] text-fg">
@@ -159,9 +159,9 @@ export function NewsletterForm({
               type="submit"
               disabled={loading}
               className={clsx(
-                "group inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-full bg-accent px-5.5 text-base font-medium text-accent-fg",
+                "group inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-full bg-cta px-5.5 text-base font-medium text-cta-fg",
                 "sm:h-11 sm:text-[0.875rem]",
-                "transition-[background-color,transform] duration-300 ease-apple hover:bg-accent-hover active:scale-[0.98]",
+                "transition-[background-color,transform] duration-300 ease-apple hover:bg-cta-hover active:scale-[0.98]",
                 "disabled:cursor-progress disabled:opacity-80",
               )}
             >

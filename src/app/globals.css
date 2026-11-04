@@ -50,9 +50,13 @@
   --band-glass: rgb(217 209 201 / 0.84);
   --band-scheme: light;
   /* Pill buttons on the page background */
-  --pill: #d9d1c9;
-  --pill-fg: #1c1a19; /* ~11.5:1 */
-  --pill-hover: #e8e1da;
+  /* Call-to-action colour (moodboard neon teal), same in both themes. Text on it: 9.4:1 */
+  --cta: #4fd1c5;
+  --cta-fg: #1b1918;
+  --cta-hover: #7fe0d7;
+  --pill: var(--cta);
+  --pill-fg: var(--cta-fg);
+  --pill-hover: var(--cta-hover);
   /* Duotone photo tint (the theme accent; NOT remapped inside the band) */
   --duo: #4fd1c5;
 
@@ -108,9 +112,13 @@
   --band-line: 247 243 239;
   --band-glass: rgb(27 25 24 / 0.84);
   --band-scheme: dark;
-  --pill: #1c1a19;
-  --pill-fg: #f4f0eb; /* ~15.3:1 */
-  --pill-hover: #34302d;
+  /* Call-to-action colour (moodboard neon teal), same in both themes. Text on it: 9.4:1 */
+  --cta: #4fd1c5;
+  --cta-fg: #1b1918;
+  --cta-hover: #7fe0d7;
+  --pill: var(--cta);
+  --pill-fg: var(--cta-fg);
+  --pill-hover: var(--cta-hover);
   --duo: #0e6a63;
 
   --tc-gray: #6b6660;
@@ -146,6 +154,9 @@
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-accent-fg: var(--accent-fg);
+  --color-cta: var(--cta);
+  --color-cta-fg: var(--cta-fg);
+  --color-cta-hover: var(--cta-hover);
   --color-pill: var(--pill);
   --color-pill-fg: var(--pill-fg);
   --color-pill-hover: var(--pill-hover);
@@ -272,10 +283,10 @@ html:has([data-hero-band]) .site-header:not([data-over-band="false"]) {
   --accent-fg: var(--band-accent-fg);
   --selection: rgb(var(--band-line) / 0.16);
   --glass: var(--band-glass);
-  /* Pills on the band are ink-on-greige inverted: band text colour as the fill */
-  --pill: var(--band-fg);
-  --pill-fg: var(--band);
-  --pill-hover: var(--band-strong);
+  /* CTAs on the band use the same neon teal as everywhere else */
+  --pill: var(--cta);
+  --pill-fg: var(--cta-fg);
+  --pill-hover: var(--cta-hover);
   color: var(--fg);
 }
 .on-band {

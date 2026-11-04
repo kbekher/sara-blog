@@ -38,11 +38,11 @@
   cursor: not-allowed;
 }
 .admin-btn-primary {
-  background: var(--accent);
-  color: var(--accent-fg);
+  background: var(--cta);
+  color: var(--cta-fg);
 }
 .admin-btn-primary:hover:not(:disabled) {
-  background: var(--accent-hover);
+  background: var(--cta-hover);
 }
 .admin-btn-secondary {
   background: var(--surface);
@@ -193,9 +193,10 @@ textarea.admin-input {
   background: color-mix(in srgb, var(--tc-green) 10%, transparent);
 }
 .admin-badge[data-tone="amber"] {
-  color: var(--tc-orange);
-  border-color: color-mix(in srgb, var(--tc-orange) 35%, transparent);
-  background: color-mix(in srgb, var(--tc-orange) 10%, transparent);
+  /* "scheduled" badge — teal accent (no orange in the palette) */
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 .admin-badge[data-tone="blue"] {
   color: var(--tc-blue);
