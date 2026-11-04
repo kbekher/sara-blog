@@ -6,7 +6,7 @@ import { fmt, getDictionary, plural, type Dictionary } from "@/lib/i18n/get-dict
 import { searchPosts } from "@/lib/posts/public-queries";
 import { PageIntro } from "@/components/site/page-intro";
 import { SearchField, SearchInput } from "@/components/site/search-input";
-import { PostMeta } from "@/components/site/post-meta";
+import { PostLabel } from "@/components/site/post-label";
 import { Highlight } from "@/components/site/highlight";
 import { EmptyState } from "@/components/site/empty-state";
 import { ListSkeleton } from "@/components/site/skeletons";
@@ -30,7 +30,7 @@ export default function SearchPage({ searchParams }: PageProps<"/search">) {
   };
 
   return (
-    <div className="mx-auto max-w-3xl px-5 pt-16 sm:px-8 sm:pt-24">
+    <div className="mx-auto max-w-3xl px-5 pt-14 sm:px-8 sm:pt-20">
       <PageIntro title={dict.search.title} />
       <div className="mt-10">
         <Suspense fallback={<SearchField labels={labels} />}>
@@ -71,7 +71,7 @@ async function SearchResults({
       >
         <Link
           href="/tags"
-          className="inline-flex h-10 items-center rounded-full border border-border px-4 text-sm text-fg transition-colors hover:bg-surface-hover"
+          className="pill pill-ghost"
         >
           {dict.nav.tags}
         </Link>
@@ -81,7 +81,7 @@ async function SearchResults({
 
   return (
     <section aria-live="polite">
-      <p className="mb-6 text-sm text-fg-subtle">{plural(results.length, dict.search.results)}</p>
+      <p className="site-label mb-6">{plural(results.length, dict.search.results)}</p>
       <ol className="divide-y divide-border border-y border-border">
         {results.map((post, i) => (
           <li
@@ -93,13 +93,13 @@ async function SearchResults({
               href={`/posts/${post.slug}`}
               className="group -mx-4 block rounded-2xl px-4 py-6 transition-colors duration-300 hover:bg-surface"
             >
-              <h2 className="font-serif text-[1.375rem] leading-snug font-semibold text-fg-strong text-balance group-hover:text-accent-hover">
+              <PostLabel publishedAt={post.publishedAt} location={post.location} readingMinutes={post.readingMinutes} dict={dict} />
+              <h2 className="mt-2.5 font-serif text-[1.5rem] leading-snug text-fg-strong italic text-balance transition-colors duration-300 group-hover:text-accent">
                 <Highlight text={post.title} query={query} />
               </h2>
               <p className="mt-2 text-[0.9375rem] leading-relaxed text-fg-muted text-pretty">
                 <Highlight text={post.snippet} query={query} />
               </p>
-              <PostMeta className="mt-3" dict={dict} publishedAt={post.publishedAt} readingMinutes={post.readingMinutes} />
             </Link>
           </li>
         ))}

@@ -1,8 +1,9 @@
 "use client";
-/** Admin top bar: brand, link to the public site, theme toggle and logout. Hidden on the login page. */
+/** Admin top bar: brand, site settings, link to the public site, theme toggle and logout. Hidden on the login page. */
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ExternalLink, LogOut } from "lucide-react";
+import { ExternalLink, LogOut, Settings } from "lucide-react";
+import { clsx } from "clsx";
 import { logout } from "@/app/admin/actions";
 import { site } from "@/lib/site";
 import { ThemeToggle } from "./theme-toggle";
@@ -21,6 +22,15 @@ export function AdminTopBar() {
           <span className="font-serif text-base font-semibold text-fg-strong">{site.name}</span>
           <span className="mx-1.5 text-fg-subtle">·</span>
           Админка
+        </Link>
+        <Link
+          href="/admin/settings"
+          className={clsx("admin-btn admin-btn-ghost admin-btn-sm", pathname.startsWith("/admin/settings") && "text-fg-strong")}
+          aria-label="Настройки сайта"
+          aria-current={pathname.startsWith("/admin/settings") ? "page" : undefined}
+        >
+          <span className="hidden sm:inline">Настройки</span>
+          <Settings className="size-4" aria-hidden />
         </Link>
         <a
           href="/"

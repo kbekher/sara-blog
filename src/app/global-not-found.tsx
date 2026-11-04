@@ -1,11 +1,11 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { siteLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
 import { site } from "@/lib/site";
 import { ThemeScript } from "@/components/theme-script";
 import { TranslateGuard } from "@/components/translate-guard";
 import { NotFoundContent } from "@/components/site/not-found-content";
-import { sourceSerif } from "./fonts";
+import { fontVariables } from "./fonts";
 import "./globals.css";
 
 /**
@@ -17,9 +17,17 @@ export const metadata: Metadata = {
   robots: { index: false },
 };
 
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#1b1918" },
+    { media: "(prefers-color-scheme: light)", color: "#e9e3dc" },
+  ],
+  colorScheme: "dark light",
+};
+
 export default function GlobalNotFound() {
   return (
-    <html lang={siteLocale} className={sourceSerif.variable} suppressHydrationWarning>
+    <html lang={siteLocale} className={fontVariables} suppressHydrationWarning>
       <head>
         <ThemeScript />
         <TranslateGuard />

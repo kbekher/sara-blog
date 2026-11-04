@@ -291,6 +291,160 @@
   color: var(--fg-muted);
 }
 
+/* ── Gallery (2–3 photos side by side) ─────────────── */
+/* Mirrors the public `.gallery`: 2 = two columns, 3 = one large photo + two stacked. */
+/* The node view's outer element (ReactNodeViewRenderer className) spans the wide column like public media. */
+.editor-body > .editor-gallery-node {
+  grid-column: wide;
+  margin-top: 2em;
+}
+.editor-body > .editor-gallery-node + * {
+  margin-top: 2em;
+}
+.editor-gallery-wrap {
+  position: relative;
+  white-space: normal;
+}
+.editor-gallery {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: 1fr 1fr;
+}
+.editor-gallery[data-count="2"] .editor-gallery-tile {
+  aspect-ratio: 4 / 5;
+}
+.editor-gallery[data-count="3"] {
+  grid-template-columns: 2fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  aspect-ratio: 3 / 2;
+}
+.editor-gallery[data-count="3"] .editor-gallery-tile:first-child {
+  grid-row: 1 / span 2;
+}
+.editor-gallery-tile {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  background: var(--surface);
+}
+.editor-gallery-tile img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  object-fit: cover;
+  border-radius: 0;
+}
+.editor-gallery-tile.is-editing {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.editor-gallery-tile.is-uploading img {
+  opacity: 0.45;
+  filter: saturate(0.6) blur(1px);
+}
+.editor-gallery-tile-tools {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.375rem;
+  opacity: 0;
+  transition: opacity 0.2s var(--ease-apple);
+}
+.editor-gallery-tile:hover .editor-gallery-tile-tools,
+.editor-gallery-wrap.is-selected .editor-gallery-tile-tools,
+.editor-gallery-tile-tools:focus-within {
+  opacity: 1;
+}
+@media (hover: none) {
+  .editor-gallery-tile-tools {
+    opacity: 1;
+  }
+}
+.editor-gallery-progress {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  color: var(--fg-strong);
+}
+.editor-gallery-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+  margin-top: 0.5rem;
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+}
+.editor-gallery-label {
+  margin-right: 0.25rem;
+  color: var(--fg-subtle);
+}
+.editor-alt-panel .editor-photo-credit {
+  margin-top: 0.5rem;
+  text-align: left;
+}
+.editor-alt-panel .editor-photo-credit a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Gallery dialog (choosing photos before inserting) */
+.editor-gallery-picker {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+}
+.editor-gallery-picker-media {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  background: var(--surface);
+}
+.editor-gallery-picker-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.editor-gallery-picker-add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 12rem;
+  padding: 1rem;
+  border: 1.5px dashed var(--border-strong);
+  border-radius: 0.75rem;
+  text-align: center;
+}
+
+/* Gallery upload placeholder (2–3 files dropped together) */
+.editor-upload-grid {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(var(--n, 2), 1fr);
+}
+.editor-upload-grid[data-count="3"] {
+  --n: 3;
+}
+.editor-upload-gallery .editor-upload-grid img {
+  max-height: 20rem;
+  aspect-ratio: 3 / 4;
+  height: 100%;
+}
+
 /* Upload placeholder widget */
 .editor-upload {
   position: relative;

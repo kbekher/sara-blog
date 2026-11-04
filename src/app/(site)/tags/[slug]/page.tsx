@@ -37,10 +37,10 @@ async function TagContent({ params }: { params: PageProps<"/tags/[slug]">["param
   const dict = getDictionary();
 
   return (
-    <div className="mx-auto max-w-6xl px-5 pt-14 sm:px-8 sm:pt-20">
+    <div className="mx-auto max-w-[75rem] px-5 pt-12 sm:px-8 sm:pt-16 lg:px-12">
       <Link
         href="/tags"
-        className="group inline-flex items-center gap-1.5 text-sm text-fg-muted transition-colors duration-300 hover:text-fg-strong"
+        className="group inline-flex min-h-11 items-center gap-1.5 text-[0.8125rem] text-fg-muted transition-colors duration-300 hover:text-fg-strong"
       >
         <ArrowLeft aria-hidden className="size-4 transition-transform duration-300 ease-apple group-hover:-translate-x-0.5" />
         <span>{dict.tags.allTags}</span>

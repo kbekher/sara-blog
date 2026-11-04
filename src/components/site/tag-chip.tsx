@@ -15,13 +15,13 @@ export function TagChip({
     <Link
       href={`/tags/${tag.slug}`}
       className={clsx(
-        "inline-flex items-center gap-2 rounded-full border border-border bg-surface text-fg-muted",
-        "transition-[background-color,color,border-color] duration-300 ease-apple hover:border-border-strong hover:bg-surface-hover hover:text-fg-strong",
-        size === "sm" ? "h-7 px-3 text-[0.8125rem]" : "h-10 px-4 text-[0.9375rem]",
+        "inline-flex items-center gap-2 rounded-full bg-bg-elevated text-fg-muted",
+        "transition-[background-color,color] duration-300 ease-apple hover:bg-pill hover:text-pill-fg",
+        size === "sm" ? "h-8 px-3.5 text-[0.8125rem]" : "h-11 px-5 text-[0.9375rem]",
       )}
     >
       <span>{tag.name}</span>
-      {count && <span className="text-fg-subtle">{count}</span>}
+      {count && <span className="text-[0.8125rem] opacity-75">{count}</span>}
     </Link>
   );
 }

@@ -1,10 +1,12 @@
 import { ImageResponse } from "next/og";
+import { loadBrandFont, OG_COLORS } from "./(site)/_lib/og";
 
 export const size = { width: 180, height: 180 };
 export const contentType = "image/png";
 
-/** Home-screen icon: amber serif "S" on the dark background (Latin only, so the bundled font suffices). */
-export default function AppleIcon() {
+/** Home-screen icon: teal brand-grotesk "Y" on dark ink (falls back to the bundled font offline). */
+export default async function AppleIcon() {
+  const fonts = await loadBrandFont("Y");
   return new ImageResponse(
     (
       <div
@@ -14,17 +16,18 @@ export default function AppleIcon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#0b0b0c",
-          color: "#d4a373",
-          fontSize: 120,
-          fontWeight: 600,
-          fontFamily: "Georgia, serif",
-          paddingBottom: 8,
+          background: OG_COLORS.bg,
+          color: OG_COLORS.accent,
+          fontSize: 124,
+          fontWeight: 800,
+          letterSpacing: -4,
+          fontFamily: '"Inter Tight", sans-serif',
+          paddingBottom: 6,
         }}
       >
-        S
+        Y
       </div>
     ),
-    size,
+    { ...size, fonts },
   );
 }

@@ -12,7 +12,7 @@ import type { JSONContent } from "@tiptap/core";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
-import { postTags, posts, type CoverImage } from "@/db/schema";
+import { postTags, posts, siteSettings, type CoverImage } from "@/db/schema";
 import type {
   ActionResult,
   PostEditorData,
@@ -43,6 +43,7 @@ import {
 } from "@/lib/posts/admin-queries";
 import { cancelScheduledNewsletter, syncNewsletterOnPublish } from "@/lib/posts/newsletter";
 import { POSTS_TAG, postTag } from "@/lib/posts/public-queries";
+import { SITE_SETTING_KEYS, SITE_SETTINGS_TAG, type SiteSettings } from "@/lib/site-settings";
 import { SLUG_MAX_LENGTH, SLUG_PATTERN, slugify } from "@/lib/services/slug";
 
 /* ───────────────────────── Shared helpers ───────────────────────── */
@@ -396,6 +397,54 @@ export async function listTags(): Promise<ActionResult<TagItem[]>> {
     return { ok: true, data: await listAllTags() };
   } catch (error) {
     return unexpected("listTags", error);
+  }
+}
+
+/* ───────────────────────── Site settings ───────────────────────── */
+
+/** Hero portrait: same rules as a cover, but the description (alt) is required. */
+const heroPortraitSchema = coverSchema.refine(
+  (c) => c === null || c.alt.length > 0,
+  { message: "Добавьте описание фото — его прочитают незрячие читатели.", path: ["alt"] },
+);
+
+/** Site-wide settings, fresh from the database (the public site reads the cached `getSiteSettings()`). */
+export async function getSiteSettingsAdmin(): Promise<ActionResult<SiteSettings>> {
+  const denied = await unauthorized();
+  if (denied) return denied;
+  try {
+    const [row] = await db
+      .select({ value: siteSettings.value })
+      .from(siteSettings)
+      .where(eq(siteSettings.key, SITE_SETTING_KEYS.heroPortrait))
+      .limit(1);
+    return { ok: true, data: { heroPortrait: (row?.value as CoverImage | null | undefined) ?? null } };
+  } catch (error) {
+    return unexpected("getSiteSettingsAdmin", error);
+  }
+}
+
+/** Set (or clear with null) the portrait in the home hero. */
+export async function saveHeroPortrait(cover: CoverImage | null): Promise<ActionResult<{ heroPortrait: CoverImage | null }>> {
+  const denied = await unauthorized();
+  if (denied) return denied;
+  const parsed = heroPortraitSchema.safeParse(cover);
+  if (!parsed.success) return validationFailure(parsed.error);
+  const value = (parsed.data ?? null) as CoverImage | null;
+  try {
+    const now = new Date();
+    if (value) {
+      await db
+        .insert(siteSettings)
+        .values({ key: SITE_SETTING_KEYS.heroPortrait, value, updatedAt: now })
+        .onConflictDoUpdate({ target: siteSettings.key, set: { value, updatedAt: now } });
+    } else {
+      await db.delete(siteSettings).where(eq(siteSettings.key, SITE_SETTING_KEYS.heroPortrait));
+    }
+    updateTag(SITE_SETTINGS_TAG);
+    return { ok: true, data: { heroPortrait: value } };
+  } catch (error) {
+    return unexpected("saveHeroPortrait", error);
   }
 }
 

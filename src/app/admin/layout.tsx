@@ -14,11 +14,12 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false, nocache: true, googleBot: { index: false, follow: false } },
 };
 
+// Browser chrome colours = --bg of each theme (globals.css).
 export const viewport: Viewport = {
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#0b0b0c" },
-    { media: "(prefers-color-scheme: light)", color: "#fbfaf8" },
+    { media: "(prefers-color-scheme: dark)", color: "#1b1918" },
+    { media: "(prefers-color-scheme: light)", color: "#e9e3dc" },
   ],
 };
 

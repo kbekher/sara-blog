@@ -39,7 +39,7 @@ export function LoginForm() {
           key={state.email ?? "email"}
           aria-invalid={state.error ? true : undefined}
           className="h-11 rounded-xl border border-border bg-bg-sunken px-3.5 text-[0.9375rem] text-fg-strong outline-none transition-[border-color,box-shadow] duration-200 ease-apple placeholder:text-fg-subtle focus:border-accent focus:ring-4 focus:ring-accent/15"
-          placeholder="sara@example.com"
+          placeholder="you@example.com"
         />
       </div>
 

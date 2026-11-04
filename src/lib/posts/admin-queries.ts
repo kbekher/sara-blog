@@ -13,6 +13,7 @@ import {
   postTags,
   postTranslations,
   posts,
+  siteSettings,
   tags,
   type Post,
   type PostTranslation,
@@ -249,11 +250,11 @@ export async function collectBlobUrls(post: Post): Promise<string[]> {
   return [...urls];
 }
 
-/** URLs from `urls` that some OTHER post still references (cover or body) — these must not be deleted. */
+/** URLs from `urls` that some OTHER post (cover or body) or a site setting (hero portrait) still references — these must not be deleted. */
 export async function urlsReferencedElsewhere(urls: string[], postId: string): Promise<Set<string>> {
   const shared = new Set<string>();
   for (const url of urls) {
-    const [coverHit, bodyHit] = await db.batch([
+    const [coverHit, bodyHit, settingHit] = await db.batch([
       db
         .select({ id: posts.id })
         .from(posts)
@@ -264,8 +265,13 @@ export async function urlsReferencedElsewhere(urls: string[], postId: string): P
         .from(postTranslations)
         .where(and(ne(postTranslations.postId, postId), sql`strpos(${postTranslations.contentHtml}, ${url}) > 0`))
         .limit(1),
+      db
+        .select({ key: siteSettings.key })
+        .from(siteSettings)
+        .where(sql`strpos(${siteSettings.value}::text, ${url}) > 0`)
+        .limit(1),
     ]);
-    if (coverHit.length > 0 || bodyHit.length > 0) shared.add(url);
+    if (coverHit.length > 0 || bodyHit.length > 0 || settingHit.length > 0) shared.add(url);
   }
   return shared;
 }

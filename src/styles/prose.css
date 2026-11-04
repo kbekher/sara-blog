@@ -145,22 +145,123 @@
   text-decoration-color: currentColor;
 }
 
-/* ── Blockquote ─────────────────────────────────────── */
+/* ── Blockquote: centered pull quote ───────────────── */
+.prose-sara > blockquote {
+  grid-column: wide;
+  justify-self: center;
+  width: 100%;
+  max-width: 47.5rem;
+  margin-block: 2.6em;
+}
 .prose-sara blockquote {
   font-family: var(--font-serif);
   font-style: italic;
-  font-size: 1.12em;
-  line-height: 1.55;
+  font-size: 1.4em;
+  line-height: 1.35;
+  letter-spacing: -0.005em;
   color: var(--fg-strong);
-  border-left: 2px solid var(--accent);
-  padding: 0.1em 0 0.1em 1.2em;
+  text-align: center;
+  text-wrap: balance;
+  hyphens: manual;
+  -webkit-hyphens: manual;
+}
+@media (min-width: 768px) {
+  .prose-sara blockquote {
+    font-size: 1.68em;
+  }
+}
+.prose-sara blockquote p {
+  text-wrap: balance;
 }
 .prose-sara blockquote > * + * {
-  margin-top: 0.8em;
+  margin-top: 0.6em;
+}
+.prose-sara > blockquote + * {
+  margin-top: 0;
 }
 .prose-sara blockquote em,
 .prose-sara blockquote i {
   font-style: normal;
+}
+/* Optional citation: <cite>, <footer> or <figcaption> inside the quote ("— из дневника, март") */
+.prose-sara blockquote cite,
+.prose-sara blockquote footer,
+.prose-sara blockquote figcaption {
+  display: block;
+  margin-top: 1.1rem;
+  font-family: var(--font-sans);
+  font-style: normal;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* ── Gallery: <div class="gallery" data-type="gallery" data-count="2|3"> + 2–3 <figure> ── */
+.prose-sara > .gallery,
+.prose-sara > [data-type="gallery"] {
+  grid-column: wide;
+  margin-block: 2.6em;
+}
+.prose-sara > .gallery + *,
+.prose-sara > [data-type="gallery"] + * {
+  margin-top: 0;
+}
+.prose-sara .gallery,
+.prose-sara [data-type="gallery"] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+.prose-sara .gallery > figure,
+.prose-sara [data-type="gallery"] > figure {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+}
+.prose-sara .gallery img,
+.prose-sara [data-type="gallery"] img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  height: auto;
+  object-fit: cover;
+  border-radius: 1.125rem;
+  margin: 0;
+}
+.prose-sara .gallery figcaption,
+.prose-sara [data-type="gallery"] figcaption {
+  margin-top: 0.55em;
+  font-size: 0.75em;
+}
+@media (min-width: 640px) {
+  .prose-sara .gallery[data-count="2"],
+  .prose-sara [data-type="gallery"][data-count="2"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: clamp(16rem, 38vw, 26rem);
+  }
+  .prose-sara .gallery[data-count="3"],
+  .prose-sara [data-type="gallery"][data-count="3"] {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    height: clamp(22rem, 46vw, 28.75rem);
+  }
+  .prose-sara .gallery[data-count="3"] > figure:first-child,
+  .prose-sara [data-type="gallery"][data-count="3"] > figure:first-child {
+    grid-row: span 2;
+  }
+  /* Fixed row heights: the image fills what the caption leaves */
+  .prose-sara .gallery[data-count] img,
+  .prose-sara [data-type="gallery"][data-count] img {
+    flex: 1 1 0;
+    min-height: 0;
+    aspect-ratio: auto;
+    height: 100%;
+  }
 }
 
 /* ── Lists ──────────────────────────────────────────── */
@@ -308,7 +409,7 @@
 .prose-sara img {
   width: 100%;
   height: auto;
-  border-radius: 1.25rem;
+  border-radius: 1.125rem;
   background: var(--bg-sunken);
 }
 .prose-sara figure img {
@@ -344,7 +445,7 @@
   text-decoration-color: currentColor;
 }
 @media (max-width: 639px) {
-  /* Edge-to-edge media on phones (container has 1.25rem side padding) */
+  /* Edge-to-edge single media on phones (container has 1.25rem side padding); galleries keep their gutters */
   .prose-sara > img,
   .prose-sara > figure > img {
     width: calc(100% + 2.5rem);

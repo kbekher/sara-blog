@@ -19,7 +19,7 @@ export default async function TagsPage() {
   const tags = await getAllTags();
 
   return (
-    <div className="mx-auto max-w-4xl px-5 pt-16 sm:px-8 sm:pt-24">
+    <div className="mx-auto max-w-4xl px-5 pt-14 sm:px-8 sm:pt-20">
       <PageIntro title={dict.tags.title} lead={dict.tags.intro} />
       {tags.length === 0 ? (
         <EmptyState

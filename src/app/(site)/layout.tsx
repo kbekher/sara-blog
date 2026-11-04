@@ -6,14 +6,14 @@ import { ThemeScript } from "@/components/theme-script";
 import { TranslateGuard } from "@/components/translate-guard";
 import { SiteHeader } from "@/components/site/header";
 import { SiteFooter } from "@/components/site/footer";
-import { sourceSerif } from "../fonts";
+import { fontVariables } from "../fonts";
 import { pageAlternates, siteOrigin } from "./_lib/seo";
 import "../globals.css";
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#0b0b0c" },
-    { media: "(prefers-color-scheme: light)", color: "#fbfaf8" },
+    { media: "(prefers-color-scheme: dark)", color: "#1b1918" },
+    { media: "(prefers-color-scheme: light)", color: "#e9e3dc" },
   ],
   colorScheme: "dark light",
 };
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
  */
 export default function SiteLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang={siteLocale} className={sourceSerif.variable} suppressHydrationWarning>
+    <html lang={siteLocale} className={fontVariables} suppressHydrationWarning>
       <head>
         <ThemeScript />
         <TranslateGuard />

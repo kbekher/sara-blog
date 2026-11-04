@@ -180,7 +180,7 @@ async function hydrate(rows: PostRow[], withContent = false): Promise<PostSummar
         readingMinutes: postTranslations.readingMinutes,
         updatedAt: postTranslations.updatedAt,
         // The body is read for summaries too (only to pick collage images; the HTML itself is dropped below, so
-X
+        // cached list payloads stay small). Fine for a small personal blog.
         contentHtml: postTranslations.contentHtml,
       })
       .from(postTranslations)

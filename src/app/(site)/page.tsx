@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
+import { Suspense, type ReactNode } from "react";
 import { notFound } from "next/navigation";
 import { ArrowDown, Feather } from "lucide-react";
 import { getDictionary, type Dictionary } from "@/lib/i18n/get-dictionary";
@@ -95,7 +95,7 @@ function HeroBand({ dict, portrait, hasPosts }: { dict: Dictionary; portrait: Co
           <p className="site-label">{dict.home.eyebrow}</p>
           <h1
             id="hero-title"
-            className="brand-wordmark mt-6 text-[3.625rem] leading-[0.92] text-fg-strong sm:text-[5rem] lg:mt-auto lg:pt-24 lg:text-[6.5rem]"
+            className="brand-wordmark mt-6 text-[3.625rem] leading-[0.92] text-fg-strong sm:text-[5rem] lg:mt-auto lg:text-[6.5rem]"
           >
             <span className="block">{first}</span>
             {rest.length > 0 && <span className="block">{rest.join(" ")}</span>}
@@ -132,7 +132,7 @@ function HeroBand({ dict, portrait, hasPosts }: { dict: Dictionary; portrait: Co
   );
 }
 
-function SectionTitle({ id, children }: { id: string; children: React.ReactNode }) {
+function SectionTitle({ id, children }: { id: string; children: ReactNode }) {
   return (
     <h2 id={id} className="mb-10 font-serif text-[1.625rem] leading-tight font-normal text-fg-strong sm:text-[1.875rem]">
       {children}

@@ -13,18 +13,13 @@ import {
 } from "@/lib/posts/public-queries";
 import { site } from "@/lib/site";
 import { CoverImage } from "@/components/site/cover-image";
-import { PostMeta } from "@/components/site/post-meta";
+import { PostLabel } from "@/components/site/post-label";
+import { PhotoCredit } from "@/components/site/photo-credit";
 import { TagList } from "@/components/site/tag-chip";
 import { ShareButtons } from "@/components/site/share-buttons";
 import { ReadingProgress } from "@/components/site/reading-progress";
 import { ArticleSkeleton } from "@/components/site/skeletons";
 import { absoluteUrl, jsonLd, pageAlternates } from "../../_lib/seo";
-
-const UNSPLASH_UTM = "utm_source=sara_blog&utm_medium=referral";
-
-function withUtm(url: string): string {
-  return `${url}${url.includes("?") ? "&" : "?"}${UNSPLASH_UTM}`;
-}
 
 export async function generateMetadata({ params }: PageProps<"/posts/[slug]">): Promise<Metadata> {
   const { slug } = await params;
@@ -76,89 +71,72 @@ async function PostContent({ params }: { params: PageProps<"/posts/[slug]">["par
       <ReadingProgress />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(blogPostingLd(post, url)) }} />
 
-      <article className="pt-10 sm:pt-14">
-        <header className="article-measure px-5 sm:px-8 motion-safe:animate-[fade-up_800ms_var(--ease-out-expo)_both]">
+      <article className="relative overflow-x-clip pt-8 sm:pt-12">
+        {/* Faint serif watermark behind the header (decorative). */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute top-[-1.5rem] left-1/2 -translate-x-1/2 font-serif text-[11rem] leading-none whitespace-nowrap text-fg opacity-[0.04] select-none sm:top-[-2rem] sm:text-[17rem] lg:text-[21rem]"
+        >
+          {site.author.toLocaleLowerCase()}
+        </div>
+
+        <header className="relative mx-auto max-w-[52rem] px-5 text-center sm:px-8 motion-safe:animate-[fade-up_800ms_var(--ease-out-expo)_both]">
           <Link
             href="/"
-            className="group inline-flex items-center gap-1.5 text-sm text-fg-muted transition-colors duration-300 hover:text-fg-strong"
+            className="group mb-8 inline-flex min-h-11 items-center gap-1.5 text-[0.8125rem] text-fg-muted transition-colors duration-300 hover:text-fg-strong sm:mb-10"
           >
             <ArrowLeft
               aria-hidden
-              className="size-4 transition-transform duration-300 ease-apple group-hover:-translate-x-0.5"
+              className="size-3.5 transition-transform duration-300 ease-apple group-hover:-translate-x-0.5"
             />
             <span>{dict.post.back}</span>
           </Link>
-
-          {post.tags.length > 0 && (
-            <div className="mt-8">
-              <TagList tags={post.tags} />
-            </div>
-          )}
-
-          <h1 className="mt-6 font-serif text-[2.375rem] leading-[1.1] font-semibold tracking-[-0.02em] text-fg-strong text-balance sm:text-[3.25rem]">
+          <PostLabel
+            className="justify-center"
+            publishedAt={post.publishedAt}
+            location={post.location}
+            readingMinutes={post.readingMinutes}
+            dict={dict}
+          />
+          <h1 className="mt-5 font-serif text-[2.375rem] leading-[1.08] font-semibold tracking-[-0.02em] text-fg-strong text-balance sm:text-[3.25rem] lg:text-[3.875rem] lg:leading-[1.05]">
             {post.title}
           </h1>
           {post.excerpt && (
-            <p className="mt-5 font-serif text-[1.3125rem] leading-normal text-fg-muted italic text-pretty sm:text-2xl">
+            <p className="mx-auto mt-4 max-w-[40ch] font-serif text-[1.25rem] leading-snug text-fg-muted italic text-pretty sm:text-[1.375rem]">
               {post.excerpt}
             </p>
           )}
-          <div className="mt-7 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-fg-muted">
-            <span className="text-fg">{site.author}</span>
-            <span aria-hidden className="text-fg-subtle">
-              ·
-            </span>
-            <PostMeta dict={dict} publishedAt={post.publishedAt} readingMinutes={post.readingMinutes} />
-          </div>
+          <span aria-hidden className="mx-auto mt-7 block h-0.5 w-11 bg-accent sm:mt-8" />
         </header>
 
         {post.cover && (
-          <figure className="mx-auto mt-10 box-content max-w-[1000px] sm:mt-14 sm:px-8 motion-safe:animate-[fade-in_1000ms_var(--ease-apple)_150ms_both]">
-            <div
-              className="relative aspect-[3/2] overflow-hidden bg-bg-sunken sm:rounded-3xl"
-              style={post.cover.color ? { backgroundColor: post.cover.color } : undefined}
-            >
+          <figure className="relative mx-auto mt-8 box-content max-w-[1000px] px-5 sm:mt-10 sm:px-8 motion-safe:animate-[fade-in_1000ms_var(--ease-apple)_150ms_both]">
+            <div className="duotone relative aspect-[3/2] overflow-hidden rounded-[1.125rem] sm:aspect-[25/13]">
               <CoverImage cover={post.cover} priority sizes="(min-width: 1064px) 1000px, 100vw" />
             </div>
-            {post.cover.source === "unsplash" && post.cover.credit && (
-              <figcaption className="mt-3 px-5 text-center text-[0.8125rem] text-fg-subtle sm:px-0">
-                {dict.post.photoCredit.before}
-                <a
-                  href={withUtm(post.cover.credit.profileUrl)}
-                  className="underline decoration-border-strong underline-offset-2 transition-colors hover:text-fg-muted"
-                >
-                  {post.cover.credit.name}
-                </a>
-                {dict.post.photoCredit.middle}
-                <a
-                  href={withUtm("https://unsplash.com/")}
-                  className="underline decoration-border-strong underline-offset-2 transition-colors hover:text-fg-muted"
-                >
-                  Unsplash
-                </a>
-                {dict.post.photoCredit.after}
-              </figcaption>
-            )}
+            <PhotoCredit cover={post.cover} dict={dict} className="mt-3 text-center" />
           </figure>
         )}
 
         <div
-          className="prose-sara mt-12 px-5 sm:mt-16 sm:px-8 motion-safe:animate-[fade-up_900ms_var(--ease-out-expo)_200ms_both]"
+          className="prose-sara mt-12 px-5 sm:mt-14 sm:px-8 motion-safe:animate-[fade-up_900ms_var(--ease-out-expo)_200ms_both]"
           dangerouslySetInnerHTML={{ __html: post.contentHtml }}
         />
 
-        <footer className="article-measure mt-16 space-y-12 px-5 sm:px-8">
-          <div className="flex flex-col gap-6 border-t border-border pt-8 sm:flex-row sm:items-start sm:justify-between">
+        <span aria-hidden className="mx-auto mt-14 block h-0.5 w-11 bg-accent" />
+
+        <footer className="mt-14 space-y-14 px-5 sm:px-8">
+          <div className="article-measure flex flex-col gap-8 sm:flex-row sm:items-start sm:justify-between">
             {post.tags.length > 0 ? (
               <div>
-                <h2 className="mb-3 text-xs font-medium tracking-[0.14em] text-fg-subtle uppercase">{dict.post.tags}</h2>
+                <h2 className="site-label mb-3">{dict.post.tags}</h2>
                 <TagList tags={post.tags} />
               </div>
             ) : (
               <span />
             )}
             <div className="sm:text-right">
-              <h2 className="mb-3 text-xs font-medium tracking-[0.14em] text-fg-subtle uppercase">{dict.post.share}</h2>
+              <h2 className="site-label mb-3">{dict.post.share}</h2>
               <ShareButtons
                 url={url}
                 title={post.title}
@@ -194,22 +172,28 @@ function AdjacentPosts({
     <Link
       href={`/posts/${post.slug}`}
       rel={direction}
-      className={`group flex h-full flex-col gap-2 rounded-2xl border border-border p-5 transition-[background-color,border-color,transform] duration-500 ease-out-expo hover:-translate-y-0.5 hover:border-border-strong hover:bg-surface-hover ${direction === "next" ? "sm:items-end sm:text-right" : ""}`}
+      className={`group flex flex-col gap-2 rounded-lg py-1 ${direction === "next" ? "sm:items-end sm:text-right" : ""}`}
     >
-      <span className="inline-flex items-center gap-1.5 text-xs font-medium tracking-[0.12em] text-fg-subtle uppercase">
-        {direction === "prev" && <ArrowLeft aria-hidden className="size-3.5" />}
+      <span className="site-label inline-flex items-center gap-1.5">
+        {direction === "prev" && (
+          <ArrowLeft aria-hidden className="size-3.5 transition-transform duration-300 group-hover:-translate-x-0.5" />
+        )}
         <span>{label}</span>
-        {direction === "next" && <ArrowRight aria-hidden className="size-3.5" />}
+        {direction === "next" && (
+          <ArrowRight aria-hidden className="size-3.5 transition-transform duration-300 group-hover:translate-x-0.5" />
+        )}
       </span>
-      <span className="font-serif text-lg leading-snug font-semibold text-fg-strong text-balance">{post.title}</span>
+      <span className="max-w-[22rem] font-serif text-[1.25rem] leading-snug text-fg-strong text-balance transition-colors duration-300 group-hover:text-accent">
+        {post.title}
+      </span>
     </Link>
   );
 
   return (
-    <nav aria-label={dict.post.moreReading}>
-      <ul className="grid gap-4 sm:grid-cols-2">
+    <nav aria-label={dict.post.moreReading} className="mx-auto max-w-[1000px] border-t border-border pt-8">
+      <ul className="grid gap-8 sm:grid-cols-2">
         <li>{older && item(older, dict.post.previous, "prev")}</li>
-        <li>{newer && item(newer, dict.post.next, "next")}</li>
+        <li className="sm:flex sm:justify-end">{newer && item(newer, dict.post.next, "next")}</li>
       </ul>
     </nav>
   );

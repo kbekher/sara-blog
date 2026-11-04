@@ -12,7 +12,7 @@ export default async function Image() {
   const subtitle = site.description;
   const eyebrow = getDictionary().home.eyebrow;
 
-  return new ImageResponse(<OgCard eyebrow={eyebrow} title={title} subtitle={subtitle} />, {
+  return new ImageResponse(<OgCard eyebrow={eyebrow} title={title} subtitle={subtitle} brandTitle />, {
     ...OG_SIZE,
     fonts: await loadOgFonts(`${eyebrow}${title}${subtitle}`),
   });

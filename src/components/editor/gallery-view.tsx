@@ -8,7 +8,8 @@
  * Preview layout mirrors the public site: 2 = two columns, 3 = one large + two stacked.
  */
 import { useEffect, useId, useRef, useState } from "react";
-import { NodeViewWrapper, ReactNodeViewRenderer, type ReactNodeViewProps } from "@tiptap/react";
+import type { NodeViewRendererProps } from "@tiptap/core";
+import { NodeViewWrapper, ReactNodeView, type ReactNodeViewProps } from "@tiptap/react";
 import { AlertTriangle, ImagePlus, ImageUp, Images, Loader2, TextCursorInput, Trash2, X } from "lucide-react";
 import { clsx } from "clsx";
 import {
@@ -338,9 +339,23 @@ function GalleryView({ node, editor, getPos, selected }: ReactNodeViewProps) {
   );
 }
 
+/**
+ * A React node view WITHOUT a contentDOM: ReactNodeView always creates one for non-leaf nodes (and appends it
+ * to its element when no <NodeViewContent> is rendered), which would make ProseMirror render the child images a
+ * second time as editable figures. Dropping it makes the gallery opaque to ProseMirror — GalleryView draws
+ * the photos itself.
+ */
+class OpaqueReactNodeView extends ReactNodeView {
+  constructor(props: NodeViewRendererProps) {
+    super(GalleryView, props, { className: "editor-gallery-node" });
+    this.contentDOMElement?.remove();
+    this.contentDOMElement = null;
+  }
+}
+
 /** Gallery with the React node view — client only. */
 export const EditorGallery = Gallery.extend({
   addNodeView() {
-    return ReactNodeViewRenderer(GalleryView, { className: "editor-gallery-node" });
+    return (props) => new OpaqueReactNodeView(props);
   },
 });
