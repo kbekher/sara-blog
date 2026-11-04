@@ -7,7 +7,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { EditorContent, useEditor, type Editor, type JSONContent } from "@tiptap/react";
 import { Placeholder } from "@tiptap/extensions";
-import { canonicalUnsplashProfileUrl, getExtensions } from "@/lib/content/extensions";
+import type { CoverImage } from "@/db/schema";
+import { getExtensions } from "@/lib/content/extensions";
 import { countWords, readingMinutesFor } from "@/lib/content/stats";
 import { siteLocale } from "@/lib/i18n/config";
 import { useToast } from "@/components/admin/toast";
@@ -20,10 +21,13 @@ import {
   type LTStatus,
 } from "./extensions/language-tool";
 import { SmartPaste } from "./extensions/paste";
-import { ImageUpload, insertImageFiles } from "./extensions/image-upload";
+import { ImageUpload, insertImageFiles, insertImageFilesSmart } from "./extensions/image-upload";
 import { SlashCommand } from "./extensions/slash-command";
 import { EditorUi, setEditorUiHandler } from "./extensions/editor-ui";
 import { EditorImage } from "./image-view";
+import { EditorGallery } from "./gallery-view";
+import { GalleryDialog } from "./gallery-dialog";
+import { coverToImageAttrs, insertGallery } from "./gallery";
 import { EditorToolbar } from "./toolbar";
 import { EditorBubbleMenu } from "./bubble-menu";
 import { PlusMenu, SlashMenu } from "./slash-menu";
@@ -81,6 +85,9 @@ export default function BodyEditor({
   const [ltStatus, setLtStatus] = useState<LTStatus>({ state: "off" });
   const [ltIssue, setLtIssue] = useState<{ issue: LTIssue; rect: { left: number; top: number; bottom: number } } | null>(null);
   const [unsplashOpen, setUnsplashOpen] = useState(false);
+  /** When set, the next Unsplash pick goes to this callback (e.g. a gallery adding a photo) instead of the body. */
+  const unsplashTarget = useRef<((cover: CoverImage) => void) | null>(null);
+  const [galleryOpen, setGalleryOpen] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
   const [stats, setStats] = useState<Stats>({ words: 0, chars: 0, minutes: 1 });
   const fileInput = useRef<HTMLInputElement>(null);
@@ -98,8 +105,9 @@ export default function BodyEditor({
   const extensions = useMemo(() => {
     const onError = (message: string) => cb.current.toast.error("Изображение не добавлено", { description: message });
     return [
-      ...getExtensions().filter((e) => e.name !== "image"),
+      ...getExtensions().filter((e) => e.name !== "image" && e.name !== "gallery"),
       EditorImage,
+      EditorGallery,
       Placeholder.configure({
         placeholder: ({ node, editor }) => {
           if (node.type.name === "heading") return node.attrs.level === 2 ? "Заголовок" : "Подзаголовок";
@@ -121,7 +129,8 @@ export default function BodyEditor({
       SmartPaste.configure({
         onImageFiles: (files, pos) => {
           const editor = editorRef.current;
-          if (editor) insertImageFiles(editor, files, pos, onError);
+          // 2–3 files dropped/pasted together become one gallery.
+          if (editor) insertImageFilesSmart(editor, files, pos, onError);
         },
       }),
       SlashCommand,
@@ -180,6 +189,10 @@ export default function BodyEditor({
   useEffect(() => {
     if (!editor) return;
     setEditorUiHandler(editor, "save", () => cb.current.onSaveShortcut());
+    setEditorUiHandler(editor, "pickUnsplashImage", (onSelect) => {
+      unsplashTarget.current = onSelect;
+      setUnsplashOpen(true);
+    });
     setEditorUiHandler(editor, "openLink", () => {
       if (editor.state.selection.empty) setLinkOpen(true);
       else editor.storage.editorUi.openBubbleLink?.();
@@ -187,13 +200,18 @@ export default function BodyEditor({
     return () => {
       setEditorUiHandler(editor, "save", null);
       setEditorUiHandler(editor, "openLink", null);
+      setEditorUiHandler(editor, "pickUnsplashImage", null);
     };
   }, [editor]);
 
   const blockCtx = useMemo<BlockContext>(
     () => ({
       pickImage: () => fileInput.current?.click(),
-      pickUnsplash: () => setUnsplashOpen(true),
+      pickUnsplash: () => {
+        unsplashTarget.current = null;
+        setUnsplashOpen(true);
+      },
+      pickGallery: () => setGalleryOpen(true),
     }),
     [],
   );
@@ -230,7 +248,11 @@ export default function BodyEditor({
           onToggleLt={toggleLt}
           onTypograph={runTypograph}
           onPickImage={() => fileInput.current?.click()}
-          onPickUnsplash={() => setUnsplashOpen(true)}
+          onPickUnsplash={() => {
+            unsplashTarget.current = null;
+            setUnsplashOpen(true);
+          }}
+          onPickGallery={() => setGalleryOpen(true)}
           linkOpen={linkOpen}
           setLinkOpen={setLinkOpen}
         />
@@ -271,28 +293,22 @@ export default function BodyEditor({
         width={1600}
         title="Фото в текст"
         onSelect={(cover) => {
+          const target = unsplashTarget.current;
+          unsplashTarget.current = null;
+          if (target) {
+            target(cover);
+            return;
+          }
           // The picker has already pinged /api/unsplash/download; src is hotlinked from images.unsplash.com.
-          // The credit is stored as structured attrs and rendered with links — the caption stays the author's.
-          const creditUrl = canonicalUnsplashProfileUrl(cover.credit?.profileUrl);
-          const credited = cover.source === "unsplash" && !!cover.credit?.name && !!creditUrl;
-          editor
-            .chain()
-            .focus()
-            .insertContent({
-              type: "image",
-              attrs: {
-                src: cover.url,
-                alt: cover.alt,
-                width: cover.width ?? null,
-                height: cover.height ?? null,
-                caption: null,
-                source: credited ? "unsplash" : null,
-                creditName: credited ? cover.credit!.name : null,
-                creditUrl: credited ? creditUrl : null,
-              },
-            })
-            .run();
+          editor.chain().focus().insertContent({ type: "image", attrs: coverToImageAttrs(cover) }).run();
         }}
+      />
+
+      <GalleryDialog
+        open={galleryOpen}
+        onClose={() => setGalleryOpen(false)}
+        initialQuery={title}
+        onInsert={(images) => insertGallery(editor, images)}
       />
 
       <div className="editor-statusbar" data-chrome>

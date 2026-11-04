@@ -9,6 +9,7 @@ import {
   Minus,
   ImageUp,
   Images,
+  LayoutGrid,
   Code2,
   Pilcrow,
   type LucideIcon,
@@ -19,6 +20,8 @@ export type BlockContext = {
   pickImage: () => void;
   /** open the Unsplash picker for a body image */
   pickUnsplash: () => void;
+  /** open the gallery dialog (2–3 photos side by side) */
+  pickGallery: () => void;
 };
 
 export type BlockCommand = {
@@ -102,6 +105,14 @@ export const BLOCK_COMMANDS: BlockCommand[] = [
     keywords: ["unsplash", "фото", "картинка", "photo", "стоки"],
     icon: Images,
     run: (_e, ctx) => ctx.pickUnsplash(),
+  },
+  {
+    id: "gallery",
+    label: "Галерея (2–3 фото)",
+    hint: "Несколько фото рядом",
+    keywords: ["галерея", "фото", "коллаж", "несколько", "gallery", "photos", "grid"],
+    icon: LayoutGrid,
+    run: (_e, ctx) => ctx.pickGallery(),
   },
   {
     id: "code",

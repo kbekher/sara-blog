@@ -72,8 +72,7 @@ export function SeriesRow({
     return <article className="border-t border-border pt-10">{text}</article>;
   }
 
-  const sizesTall = "(min-width: 1024px) 380px, 50vw";
-  const sizesSmall = "(min-width: 1024px) 380px, 50vw";
+  const sizesHalf = "(min-width: 1024px) 380px, 50vw";
 
   return (
     <article className={clsx("grid gap-8 lg:gap-6", flip ? "lg:grid-cols-[2fr_1fr]" : "lg:grid-cols-[1fr_2fr]")}>
@@ -102,18 +101,18 @@ export function SeriesRow({
               post={post}
               tone="duo"
               priority={priority}
-              sizes={sizesTall}
+              sizes={sizesHalf}
               className="row-span-2 h-full min-h-0 rounded-[1.125rem]"
             />
             <PostImage
               post={post}
               index={1}
               tone="bw"
-              sizes={sizesSmall}
+              sizes={sizesHalf}
               className={clsx("min-h-0 rounded-[1.125rem]", count === 2 && "row-span-2 h-full")}
             />
             {count >= 3 && (
-              <PostImage post={post} index={2} tone="bw" sizes={sizesSmall} className="min-h-0 rounded-[1.125rem]" />
+              <PostImage post={post} index={2} tone="bw" sizes={sizesHalf} className="min-h-0 rounded-[1.125rem]" />
             )}
           </>
         )}

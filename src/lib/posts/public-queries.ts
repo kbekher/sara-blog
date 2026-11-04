@@ -1,6 +1,6 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
-import { and, asc, count, desc, eq, gt, ilike, inArray, lt, lte, ne, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, ilike, inArray, lt, lte, ne, notInArray, or, sql, type SQL } from "drizzle-orm";
 import { db, hasDatabase } from "@/db";
 import { posts, postTags, postTranslations, tags, type CoverImage } from "@/db/schema";
 import { siteLocale } from "@/lib/i18n/config";
@@ -245,9 +245,12 @@ function toPositiveInt(value: number | undefined, fallback: number, max = Number
 
 // ── Public API ───────────────────────────────────────────────────────────
 
-/** Paginated live posts, newest first. `excludeSlug` removes e.g. the home hero post from the list. */
+/**
+ * Paginated live posts, newest first. `excludeSlug` / `excludeSlugs` remove posts shown elsewhere on the page
+ * (e.g. the home "Последние записи" rows) from the list.
+ */
 export async function getPublishedPosts(
-  options: { page?: number; pageSize?: number; excludeSlug?: string } = {},
+  options: { page?: number; pageSize?: number; excludeSlug?: string; excludeSlugs?: string[] } = {},
 ): Promise<PostPage> {
   "use cache";
   cacheLife(PUBLIC_CACHE_LIFE);
@@ -258,7 +261,8 @@ export async function getPublishedPosts(
   const empty: PostPage = { posts: [], total: 0, page, pageSize, pageCount: 0 };
   if (!hasDatabase) return empty;
 
-  const where = options.excludeSlug ? and(isLive(), ne(posts.slug, options.excludeSlug)) : isLive();
+  const excluded = [...(options.excludeSlugs ?? []), ...(options.excludeSlug ? [options.excludeSlug] : [])];
+  const where = excluded.length > 0 ? and(isLive(), notInArray(posts.slug, excluded)) : isLive();
   const [[{ total }], rows] = await Promise.all([
     db.select({ total: count() }).from(posts).where(where),
     db
@@ -294,6 +298,25 @@ export async function getFeaturedPost(): Promise<PostSummary | null> {
     .limit(1);
   const [post] = await hydrate(rows);
   return post ?? null;
+}
+
+/**
+ * The home page's "Последние записи" rows: posts marked `featured` first, then the newest, `limit` in total.
+ * The archive below lists everything else (`getPublishedPosts({ excludeSlugs })`).
+ */
+export async function getLatestPosts(limit = 3): Promise<PostSummary[]> {
+  "use cache";
+  cacheLife(PUBLIC_CACHE_LIFE);
+  cacheTag(POSTS_TAG);
+  if (!hasDatabase) return [];
+
+  const rows = await db
+    .select(postColumns)
+    .from(posts)
+    .where(isLive())
+    .orderBy(desc(posts.featured), desc(posts.publishedAt), desc(posts.createdAt))
+    .limit(toPositiveInt(limit, 3, 10));
+  return hydrate(rows);
 }
 
 /** A single live post with its body. Drafts and scheduled posts resolve to `null` (→ 404). */

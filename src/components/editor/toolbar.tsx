@@ -26,6 +26,7 @@ import {
   Loader2,
   ImageUp,
   Images,
+  LayoutGrid,
 } from "lucide-react";
 import { clsx } from "clsx";
 import type { TextAlignment } from "@/lib/content/extensions";
@@ -89,6 +90,7 @@ type ToolbarProps = {
   onTypograph: () => void;
   onPickImage: () => void;
   onPickUnsplash: () => void;
+  onPickGallery: () => void;
   /** registered so Mod-K with an empty selection can open the link popover */
   linkOpen: boolean;
   setLinkOpen: (open: boolean) => void;
@@ -102,6 +104,7 @@ export function EditorToolbar({
   onTypograph,
   onPickImage,
   onPickUnsplash,
+  onPickGallery,
   linkOpen,
   setLinkOpen,
 }: ToolbarProps) {
@@ -324,6 +327,22 @@ export function EditorToolbar({
           <span className="text-left">
             <span className="block text-sm text-fg-strong">Unsplash</span>
             <span className="block text-xs text-fg-subtle">Бесплатные фотографии</span>
+          </span>
+        </button>
+        <button
+          type="button"
+          className="editor-menu-item"
+          onClick={() => {
+            setImageOpen(false);
+            onPickGallery();
+          }}
+        >
+          <span className="editor-menu-icon">
+            <LayoutGrid className="size-4" aria-hidden />
+          </span>
+          <span className="text-left">
+            <span className="block text-sm text-fg-strong">Галерея (2–3 фото)</span>
+            <span className="block text-xs text-fg-subtle">Несколько фото рядом</span>
           </span>
         </button>
       </Popover>

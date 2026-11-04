@@ -108,6 +108,83 @@ export function insertImageFiles(editor: Editor, files: File[], pos: number | nu
   }
 }
 
+/** Placeholder for a gallery upload: the local previews side by side with one shared progress bar. */
+function galleryPlaceholderElement(previewUrls: string[]): { element: HTMLElement; setProgress: (p: number) => void } {
+  const { element, setProgress } = placeholderElement(previewUrls[0]!);
+  element.classList.add("editor-upload-gallery");
+  const first = element.querySelector("img")!;
+  const grid = document.createElement("div");
+  grid.className = "editor-upload-grid";
+  grid.dataset.count = String(previewUrls.length);
+  first.replaceWith(grid);
+  grid.appendChild(first);
+  for (const url of previewUrls.slice(1)) {
+    const img = document.createElement("img");
+    img.src = url;
+    img.alt = "";
+    grid.appendChild(img);
+  }
+  return { element, setProgress };
+}
+
+/**
+ * 2–3 image files dropped/pasted together → upload them all and insert ONE gallery (a single image if only one
+ * upload succeeds). Any other number of files falls back to separate images.
+ */
+export function insertImageFilesSmart(editor: Editor, files: File[], pos: number | null, onError: (m: string) => void) {
+  const valid: File[] = [];
+  for (const file of files) {
+    const problem = validateImage(file);
+    if (problem) onError(problem);
+    else valid.push(file);
+  }
+  const canGallery = !!editor.schema.nodes.gallery && valid.length >= 2 && valid.length <= 3;
+  if (!canGallery) {
+    if (valid.length) insertImageFiles(editor, valid, pos, onError);
+    return;
+  }
+
+  const insertAt = blockBoundary(editor, pos ?? editor.state.selection.from);
+  const id = `upload-${Math.random().toString(36).slice(2)}`;
+  const previews = valid.map((f) => URL.createObjectURL(f));
+  const { element, setProgress } = galleryPlaceholderElement(previews);
+  const tr = editor.state.tr.setMeta(imageUploadKey, { add: { id, pos: insertAt, element } } satisfies Meta);
+  tr.setMeta("addToHistory", false);
+  editor.view.dispatch(tr);
+
+  const progress = valid.map(() => 0);
+  const report = () => setProgress(Math.round(progress.reduce((a, b) => a + b, 0) / progress.length));
+
+  void Promise.allSettled(
+    valid.map((file, i) =>
+      uploadImage(file, {
+        onProgress: (p) => {
+          progress[i] = p;
+          report();
+        },
+      }),
+    ),
+  ).then((results) => {
+    previews.forEach((url) => setTimeout(() => URL.revokeObjectURL(url), 4000));
+    for (const r of results) {
+      if (r.status === "rejected") onError(r.reason instanceof Error ? r.reason.message : "Не удалось загрузить изображение.");
+    }
+    if (editor.isDestroyed) return;
+    const done = results.flatMap((r) => (r.status === "fulfilled" ? [r.value] : []));
+    const at = findPlaceholder(editor.state, id);
+    const out = editor.state.tr.setMeta(imageUploadKey, { remove: { id } } satisfies Meta);
+    if (at !== null && done.length > 0) {
+      const { image, gallery } = editor.schema.nodes;
+      const images = done.map(({ url, width, height }) => image!.create({ src: url, alt: "", width, height }));
+      out.insert(at, images.length >= 2 ? gallery!.create(null, images) : images[0]!);
+      editor.storage.imageUpload.pendingAltSrc = done[0]!.url;
+    } else {
+      out.setMeta("addToHistory", false);
+    }
+    editor.view.dispatch(out);
+  });
+}
+
 /** true (once) if the image with this src was just uploaded and should prompt for alt text. */
 export function takePendingAlt(editor: Editor, src: string): boolean {
   const storage = editor.storage.imageUpload;
