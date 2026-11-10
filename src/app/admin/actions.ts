@@ -5,7 +5,7 @@
  * `{ ok: false, error }` with a Russian, user-friendly message for expected failures.
  */
 import { randomUUID } from "node:crypto";
-import { updateTag } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { del } from "@vercel/blob";
 import type { JSONContent } from "@tiptap/core";
@@ -89,6 +89,11 @@ function unexpected(action: string, error: unknown): Failure {
 }
 
 /** Read-your-writes for the public site (tags defined by the public queries module). */
+/** Drops the admin dashboard from the client router cache so "back to list" shows fresh data. */
+function invalidateAdminList() {
+  revalidatePath("/admin");
+}
+
 function invalidatePublic(...slugs: (string | undefined | null)[]) {
   updateTag(POSTS_TAG);
   for (const slug of new Set(slugs)) if (slug) updateTag(postTag(slug));
@@ -273,6 +278,7 @@ export async function savePost(
       ...(tagIds.length > 0 ? [db.insert(postTags).values(tagIds.map((tagId) => ({ postId: id, tagId })))] : []),
     ]);
 
+    invalidateAdminList();
     if (existing?.post.status === "published") invalidatePublic(slug, existing.post.slug);
 
     return { ok: true, data: { id, slug, updatedAt: now.toISOString() } };
@@ -317,6 +323,7 @@ export async function publishPost(input: PublishInput): Promise<ActionResult<Pub
     await db.update(posts).set({ status: "published", publishedAt, updatedAt: now }).where(eq(posts.id, id));
 
     invalidatePublic(post.slug);
+    invalidateAdminList();
 
     // Email the subscribers (once per post). Never fails the publish — the outcome is reported to the UI.
     const newsletter = await syncNewsletterOnPublish({
@@ -356,6 +363,7 @@ export async function unpublishPost(id: string): Promise<ActionResult> {
       .returning({ id: posts.id, slug: posts.slug, newsletterCampaignId: posts.newsletterCampaignId, newsletterSentAt: posts.newsletterSentAt });
     if (!row) return NOT_FOUND;
     invalidatePublic(row.slug);
+    invalidateAdminList();
     // A scheduled email must not go out for a post that is no longer public (best-effort; logged on failure).
     await cancelScheduledNewsletter(row);
     return { ok: true };
@@ -378,6 +386,7 @@ export async function deletePost(id: string): Promise<ActionResult> {
     await cancelScheduledNewsletter(post, { store: null }); // best-effort; never fails the action
     await db.delete(posts).where(eq(posts.id, id)); // post text rows & post_tags cascade
     if (post.status === "published") invalidatePublic(post.slug);
+    invalidateAdminList();
 
     // Best-effort cleanup of uploaded images no other post uses; never fails the action.
     const orphans = blobUrls.filter((url) => !shared.has(url));

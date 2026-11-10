@@ -9,6 +9,8 @@ import { PostEditor } from "@/components/editor/post-editor";
 export const metadata: Metadata = { title: "Редактор" };
 // Reads the session & uncached post data on every request.
 export const instant = false;
+// Publishing awaits Brevo (create campaign + sendNow); the platform default is too short for long posts.
+export const maxDuration = 60;
 
 export default function EditPostPage({ params }: PageProps<"/admin/posts/[id]">) {
   return (
