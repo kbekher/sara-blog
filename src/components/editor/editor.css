@@ -141,6 +141,17 @@
   -webkit-font-variant-ligatures: none;
   font-variant-ligatures: none;
 }
+/* On phones, Enter (new paragraph) was reading as a full extra line: public --prose-gap plus
+ * empty-paragraph min-height, and iOS does not collapse those margins. Tighten only the editor. */
+@media (max-width: 720px) {
+  .editor-body.prose-sara {
+    --prose-gap: 0.45em;
+  }
+  .editor-body.prose-sara p:empty,
+  .editor-body.prose-sara > p.is-empty {
+    min-height: 1.15em;
+  }
+}
 .editor-body:focus-visible {
   outline: none;
 }

@@ -91,7 +91,8 @@ async function brevo(
         ...(payload === undefined ? {} : { "Content-Type": "application/json" }),
       },
       body: payload === undefined ? undefined : JSON.stringify(payload),
-      signal: AbortSignal.timeout(15_000),
+      // Create + sendNow are sequential; a long HTML payload or a slow Brevo region needs more than 15s.
+      signal: AbortSignal.timeout(30_000),
       cache: "no-store",
     });
   } catch (error) {

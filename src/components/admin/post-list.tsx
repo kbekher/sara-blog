@@ -29,6 +29,12 @@ export function PostList({ posts: initialPosts }: { posts: PostListItem[] }) {
   const router = useRouter();
   const toast = useToast();
   const [posts, setPosts] = useState(initialPosts);
+  // A refreshed server payload (after create/publish/back-navigation) replaces the local copy.
+  const [seen, setSeen] = useState(initialPosts);
+  if (seen !== initialPosts) {
+    setSeen(initialPosts);
+    setPosts(initialPosts);
+  }
   const [filter, setFilter] = useState<Filter>("all");
   const [toDelete, setToDelete] = useState<PostListItem | null>(null);
   const [busy, setBusy] = useState(false);

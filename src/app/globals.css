@@ -179,8 +179,14 @@ html {
   background: var(--bg);
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
-  scroll-behavior: smooth;
+  /* In-page anchors (#latest) still smooth-scroll; route changes use instant scroll (see ScrollToTop). */
+  scroll-behavior: auto;
   scrollbar-gutter: stable;
+}
+@media (prefers-reduced-motion: no-preference) {
+  html:has(:target) {
+    scroll-behavior: smooth;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   html {

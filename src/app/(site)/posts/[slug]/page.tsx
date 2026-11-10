@@ -19,6 +19,7 @@ import { TagList } from "@/components/site/tag-chip";
 import { ShareButtons } from "@/components/site/share-buttons";
 import { ReadingProgress } from "@/components/site/reading-progress";
 import { ArticleSkeleton } from "@/components/site/skeletons";
+import { ScrollToTop } from "@/components/site/scroll-to-top";
 import { absoluteUrl, jsonLd, pageAlternates } from "../../_lib/seo";
 
 export async function generateMetadata({ params }: PageProps<"/posts/[slug]">): Promise<Metadata> {
@@ -71,13 +72,14 @@ async function PostContent({ params }: { params: PageProps<"/posts/[slug]">["par
       <ReadingProgress />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(blogPostingLd(post, url)) }} />
 
-      <article className="relative overflow-x-clip pt-8 sm:pt-12">
-        {/* Faint serif watermark behind the header (decorative). */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute top-[-1.5rem] left-1/2 -translate-x-1/2 font-serif text-[11rem] leading-none whitespace-nowrap text-fg opacity-[0.04] select-none sm:top-[-2rem] sm:text-[17rem] lg:text-[21rem]"
-        >
-          {site.author.toLocaleLowerCase()}
+      <article className="relative pt-8 sm:pt-12">
+        <ScrollToTop />
+        {/* Clip the overflowing glyph here so `overflow-x` on the article cannot create a
+            scroll container (that left the page a few dozen pixels down on open). */}
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[12rem] overflow-hidden sm:h-[16rem]">
+          <div className="absolute top-[-1.5rem] left-1/2 -translate-x-1/2 font-serif text-[11rem] leading-none whitespace-nowrap text-fg opacity-[0.04] select-none sm:top-[-2rem] sm:text-[17rem] lg:text-[21rem]">
+            {site.author.toLocaleLowerCase()}
+          </div>
         </div>
 
         <header className="relative mx-auto max-w-[52rem] px-5 text-center sm:px-8 motion-safe:animate-[fade-up_800ms_var(--ease-out-expo)_both]">
@@ -111,7 +113,7 @@ async function PostContent({ params }: { params: PageProps<"/posts/[slug]">["par
 
         {post.cover && (
           <figure className="relative mx-auto mt-8 box-content max-w-[1000px] px-5 sm:mt-10 sm:px-8 motion-safe:animate-[fade-in_1000ms_var(--ease-apple)_150ms_both]">
-            <div className="duotone relative aspect-[3/2] overflow-hidden rounded-[1.125rem] sm:aspect-[25/13]">
+            <div className="relative aspect-[3/2] overflow-hidden rounded-[1.125rem] sm:aspect-[25/13]">
               <CoverImage cover={post.cover} priority sizes="(min-width: 1064px) 1000px, 100vw" />
             </div>
             <PhotoCredit cover={post.cover} dict={dict} className="mt-3 text-center" />
