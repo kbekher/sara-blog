@@ -8,7 +8,7 @@ import { PostImage } from "./post-image";
 
 /**
  * "Последние записи" row: a text column (label, serif title, excerpt, pill, optional small image) next to a collage
- * of the post's images (1 tall duotone + 2 greyscale). `flip` puts the text on the right (desktop only).
+ * of the post's images (all greyscale, colour on hover). `flip` puts the text on the right (desktop only).
  * Image count drives the layout: 0 → text-only row with a larger title; 1 → one wide image; 2 → tall + one;
  * 3+ → tall + two (a 4th image sits under the text on desktop, non-flipped rows only).
  *
@@ -90,7 +90,7 @@ export function SeriesRow({
         {count === 1 ? (
           <PostImage
             post={post}
-            tone="duo"
+            tone="bw"
             priority={priority}
             sizes="(min-width: 1024px) 780px, 100vw"
             className="h-full rounded-[1.125rem]"
@@ -99,7 +99,7 @@ export function SeriesRow({
           <>
             <PostImage
               post={post}
-              tone="duo"
+              tone="bw"
               priority={priority}
               sizes={sizesHalf}
               className="row-span-2 h-full min-h-0 rounded-[1.125rem]"
